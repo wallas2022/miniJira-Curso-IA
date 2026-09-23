@@ -1,0 +1,117 @@
+// Modelo de datos aprobado en docs/specs.md (seccion 5, RF-01..RF-16)
+// Stack confirmado: SQLite + Prisma (Decision PO/PM, P13)
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Rol {
+  ADMIN
+  USUARIO
+}
+
+enum EstadoTicket {
+  POR_HACER
+  EN_PROGRESO
+  LISTO
+}
+
+enum Prioridad {
+  BAJA
+  MEDIA
+  ALTA
+}
+
+// RF-06/RF-07: roles y login propio (email + contrasena). Sin registro publico:
+// las cuentas las crea el Administrador (specs.md seccion 4 / Out-of-Scope).
+model User {
+  id           String   @id @default(cuid())
+  nombre       String
+  email        String   @unique
+  passwordHash String
+  rol          Rol      @default(USUARIO)
+  creadoEn     DateTime @default(now())
+
+  ticketsCreados   Ticket[]  @relation("TicketCreador")
+  ticketsAsignados Ticket[]  @relation("TicketResponsable")
+  comentarios      Comment[]
+}
+
+// RF-04: entidad propia; solo Admin crea/edita; todos los usuarios ven todos los proyectos.
+model Project {
+  id          String   @id @default(cuid())
+  nombre      String
+  descripcion String?
+  creadoEn    DateTime @default(now())
+
+  tickets TicketProject[]
+}
+
+// RF-01/RF-02/RF-03/RF-05/RF-08/RF-09/RF-10/RF-16
+model Ticket {
+  id            String       @id @default(cuid())
+  titulo        String
+  descripcion   String?
+  estado        EstadoTicket @default(POR_HACER)
+  prioridad     Prioridad    @default(MEDIA)
+  archivado     Boolean      @default(false) // RF-02: "eliminar" = archivo logico, solo Admin archiva/restaura
+  version       Int          @default(1)     // RF-16: bloqueo optimista (409 Conflict si no coincide)
+  creadoEn      DateTime     @default(now())
+  actualizadoEn DateTime     @updatedAt
+  cerradoEn     DateTime?                     // se completa al pasar a LISTO (para RF-13)
+
+  creadorId String
+  creador   User   @relation("TicketCreador", fields: [creadorId], references: [id])
+
+  responsableId String? // RF-05: cero o un responsable; solo Admin asigna/reasigna
+  responsable   User?   @relation("TicketResponsable", fields: [responsableId], references: [id])
+
+  proyectos   TicketProject[] // RF-03: relacion muchos-a-muchos, al menos un proyecto
+  etiquetas   TicketTag[]     // RF-09b: texto libre, varias por ticket
+  comentarios Comment[]       // RF-11
+}
+
+// RF-03: tabla puente muchos-a-muchos ticket-proyecto
+model TicketProject {
+  ticketId  String
+  projectId String
+  ticket    Ticket  @relation(fields: [ticketId], references: [id])
+  project   Project @relation(fields: [projectId], references: [id])
+
+  @@id([ticketId, projectId])
+}
+
+// RF-09b: etiquetas libres, cualquier usuario puede crearlas al editar un ticket
+model Tag {
+  id     String @id @default(cuid())
+  nombre String @unique
+
+  tickets TicketTag[]
+}
+
+model TicketTag {
+  ticketId String
+  tagId    String
+  ticket   Ticket @relation(fields: [ticketId], references: [id])
+  tag      Tag    @relation(fields: [tagId], references: [id])
+
+  @@id([ticketId, tagId])
+}
+
+// RF-11: comentarios dentro de un ticket (autor y fecha visibles)
+model Comment {
+  id       String   @id @default(cuid())
+  texto    String
+  creadoEn DateTime @default(now())
+
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id])
+
+  autorId String
+  autor   User   @relation(fields: [autorId], references: [id])
+}
