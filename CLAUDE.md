@@ -19,6 +19,7 @@ Cualquier cambio de stack se decide primero en `specs.md`, luego se refleja aqu�
 - **`docs/specs.md` es la fuente única de verdad (single source of truth).** Ante cualquier ambigüedad o conflicto entre código, comentarios o conversación, `specs.md` decide. Si el código diverge de `specs.md`, se corrige el código o se actualiza `specs.md` explícitamente — nunca se dejan divergir en silencio.
 - Cambios de alcance o requisitos se reflejan primero en `specs.md`, luego en el código.
 - Nombrar artefactos de forma secuencial y descriptiva dentro de `docs/` para mantener trazabilidad del proceso.
+- **`COMPONENTS.md` es el inventario de componentes reutilizables.** Antes de crear cualquier componente, consultar `COMPONENTS.md` — nunca duplicar uno que ya exista. Cada vez que se crea un componente reutilizable nuevo, se agrega una entrada con: nombre, ruta relativa, props principales y cuándo usarlo.
 
 ## Estándares de UI
 - **Accesibilidad:** cumplir WCAG 2.1 nivel AA como mínimo (contraste, navegación por teclado, roles/aria, foco visible, textos alternativos).
