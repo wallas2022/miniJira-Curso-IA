@@ -1,10 +1,13 @@
+import cors from 'cors';
 import express from 'express';
 import authRoutes from './routes/auth.routes';
 import projectsRoutes from './routes/projects.routes';
 import ticketsRoutes from './routes/tickets.routes';
+import usersRoutes from './routes/users.routes';
 import reportesRoutes from './routes/reportes.routes';
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 app.get('/health', (_req, res) => {
@@ -14,6 +17,7 @@ app.get('/health', (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectsRoutes);
 app.use('/api/tickets', ticketsRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/reportes', reportesRoutes);
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;

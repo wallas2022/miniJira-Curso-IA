@@ -1,4 +1,4 @@
-// Modelo de datos aprobado en docs/specs.md (seccion 5, RF-01..RF-16)
+// Modelo de datos aprobado en docs/specs.md v1.1 (seccion 5) y architecture/er_diagram.md
 // Stack confirmado: SQLite + Prisma (Decision PO/PM, P13)
 
 datasource db {
@@ -10,80 +10,79 @@ generator client {
   provider = "prisma-client-js"
 }
 
-enum Rol {
-  ADMIN
-  USUARIO
-}
-
-enum EstadoTicket {
-  POR_HACER
-  EN_PROGRESO
-  LISTO
-}
-
-enum Prioridad {
-  BAJA
-  MEDIA
-  ALTA
-}
+// NOTA TECNICA: el conector SQLite de Prisma no soporta `enum` nativo.
+// Se modelan como String con los valores permitidos documentados aqui;
+// la validacion de valores se hace en la capa de aplicacion.
+// User.rol: "ADMIN" | "USUARIO"
+// Ticket.estado: "POR_HACER" | "EN_PROGRESO" | "REVIEW" | "TERMINADO" (orden pendiente de confirmar, R-07)
+// Ticket.prioridad: "BAJA" | "MEDIA" | "ALTA"
 
 // RF-06/RF-07: roles y login propio (email + contrasena). Sin registro publico:
 // las cuentas las crea el Administrador (specs.md seccion 4 / Out-of-Scope).
 model User {
   id           String   @id @default(cuid())
-  nombre       String
   email        String   @unique
   passwordHash String
-  rol          Rol      @default(USUARIO)
+  rol          String   @default("USUARIO")
+  activo       Boolean  @default(true)
   creadoEn     DateTime @default(now())
 
-  ticketsCreados   Ticket[]  @relation("TicketCreador")
-  ticketsAsignados Ticket[]  @relation("TicketResponsable")
-  comentarios      Comment[]
+  proyectosCreados   Project[]        @relation("ProyectoCreador")
+  ticketsCreados     Ticket[]         @relation("TicketCreador")
+  ticketsArchivados  Ticket[]         @relation("TicketArchivadoPor")
+  responsableDe      TicketAssignee[]
+  comentarios        Comment[]
 }
 
-// RF-04: entidad propia; solo Admin crea/edita; todos los usuarios ven todos los proyectos.
+// RF-04: entidad propia; Admin y Usuario crean/editan (Usuario solo los propios);
+// visibilidad restringida para Usuario (RF-17).
 model Project {
   id          String   @id @default(cuid())
   nombre      String
   descripcion String?
   creadoEn    DateTime @default(now())
 
-  tickets TicketProject[]
+  creadorId String
+  creador   User   @relation("ProyectoCreador", fields: [creadorId], references: [id])
+
+  tickets Ticket[]
 }
 
 // RF-01/RF-02/RF-03/RF-05/RF-08/RF-09/RF-10/RF-16
 model Ticket {
-  id            String       @id @default(cuid())
+  id            String    @id @default(cuid())
   titulo        String
   descripcion   String?
-  estado        EstadoTicket @default(POR_HACER)
-  prioridad     Prioridad    @default(MEDIA)
-  archivado     Boolean      @default(false) // RF-02: "eliminar" = archivo logico, solo Admin archiva/restaura
-  version       Int          @default(1)     // RF-16: bloqueo optimista (409 Conflict si no coincide)
-  creadoEn      DateTime     @default(now())
-  actualizadoEn DateTime     @updatedAt
-  cerradoEn     DateTime?                     // se completa al pasar a LISTO (para RF-13)
+  estado        String    @default("POR_HACER")
+  prioridad     String    @default("MEDIA")
+  fecha         DateTime?
+  archivado     Boolean   @default(false) // RF-02: "eliminar" = archivo logico
+  creadoEn      DateTime  @default(now())
+  actualizadoEn DateTime  @updatedAt
+  cerradoEn     DateTime? // se completa al pasar a TERMINADO (para RF-13)
+
+  proyectoId String // RF-03: un ticket pertenece a un unico proyecto
+  proyecto   Project @relation(fields: [proyectoId], references: [id])
 
   creadorId String
   creador   User   @relation("TicketCreador", fields: [creadorId], references: [id])
 
-  responsableId String? // RF-05: cero o un responsable; solo Admin asigna/reasigna
-  responsable   User?   @relation("TicketResponsable", fields: [responsableId], references: [id])
+  archivadoPorId String? // RF-02: traza de quien archivo (solo si el Admin archiva un ticket de un tercero)
+  archivadoPor   User?   @relation("TicketArchivadoPor", fields: [archivadoPorId], references: [id])
 
-  proyectos   TicketProject[] // RF-03: relacion muchos-a-muchos, al menos un proyecto
-  etiquetas   TicketTag[]     // RF-09b: texto libre, varias por ticket
-  comentarios Comment[]       // RF-11
+  responsables TicketAssignee[] // RF-05: cero, uno o varios responsables
+  etiquetas    TicketTag[]      // RF-09b
+  comentarios  Comment[]        // RF-11
 }
 
-// RF-03: tabla puente muchos-a-muchos ticket-proyecto
-model TicketProject {
-  ticketId  String
-  projectId String
-  ticket    Ticket  @relation(fields: [ticketId], references: [id])
-  project   Project @relation(fields: [projectId], references: [id])
+// RF-05: relacion muchos-a-muchos ticket-responsable
+model TicketAssignee {
+  ticketId String
+  userId   String
+  ticket   Ticket @relation(fields: [ticketId], references: [id])
+  user     User   @relation(fields: [userId], references: [id])
 
-  @@id([ticketId, projectId])
+  @@id([ticketId, userId])
 }
 
 // RF-09b: etiquetas libres, cualquier usuario puede crearlas al editar un ticket
@@ -105,9 +104,9 @@ model TicketTag {
 
 // RF-11: comentarios dentro de un ticket (autor y fecha visibles)
 model Comment {
-  id       String   @id @default(cuid())
-  texto    String
-  creadoEn DateTime @default(now())
+  id        String   @id @default(cuid())
+  contenido String
+  fecha     DateTime @default(now())
 
   ticketId String
   ticket   Ticket @relation(fields: [ticketId], references: [id])
