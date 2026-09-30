@@ -1,59 +1,127 @@
+/* Design tokens alineados a docs/prototype-spec.md seccion A.
+   Todos los pares de color claro/oscuro fueron verificados contra los minimos
+   de contraste de la seccion B.1 (WCAG 2.1 AA: 4.5:1 texto, 3:1 componentes/UI)
+   calculando la luminancia relativa real de cada par; las razones verificadas
+   se documentan junto a cada bloque. */
+
 :root {
-  /* Colores base -- DRAFT, pendiente de validar estilo "Apple" (docs/specs.md RF-14) */
-  --color-bg: #ffffff;
-  --color-surface: #ffffff;
-  --color-text: #1d1d1f;
-  --color-text-secondary: #6e6e73;
-  --color-primary: #0071e3;
-  --color-primary-contrast: #ffffff;
-  --color-border: #d2d2d7;
-  --color-danger: #d70015;
-  --color-focus-ring: #0071e3;
+  /* --- Color: superficies y texto --- */
+  --mj-color-bg-canvas: #ffffff;
+  --mj-color-bg-surface: #ffffff;
+  --mj-color-border: #d2d2d7;
+  --mj-color-text-primary: #1d1d1f;
+  --mj-color-text-secondary: #6e6e73; /* 5.07:1 sobre --mj-color-bg-canvas */
+  --mj-color-text-on-primary: #ffffff;
 
-  /* Prioridad (RF-09a): color + texto, nunca solo color */
-  --color-prioridad-baja: #1c7a3d;
-  --color-prioridad-media: #a15c00;
-  --color-prioridad-alta: #c0201c;
+  /* Accion primaria: relleno de boton (misma superficie en ambos temas, 4.70:1
+     con --mj-color-text-on-primary). El *link/foco de texto* usa un token
+     aparte (--mj-color-link) porque sobre fondo oscuro este azul no llega a 4.5:1. */
+  --mj-color-action-primary: #0071e3;
+  --mj-color-link: #0071e3; /* 4.70:1 sobre --mj-color-bg-canvas en claro */
+  --mj-color-focus-ring: #0071e3; /* componente UI: solo exige 3:1, pasa en ambos temas */
 
-  /* Estados de feedback */
-  --color-info-bg: #eef6ff;
-  --color-info-text: #0b4a8f;
-  --color-error-bg: #fdecec;
-  --color-error-text: #8a1c1c;
+  /* RF-09a: prioridad = color + texto, nunca solo color. Verificado sobre bg-surface. */
+  --mj-color-priority-baja: #1c7a3d; /* 5.38:1 */
+  --mj-color-priority-media: #a15c00; /* 5.19:1 */
+  --mj-color-priority-alta: #c0201c; /* 6.06:1 */
 
-  /* Espaciado */
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
+  --mj-color-danger: #d70015; /* borde de accion destructiva, 4.71:1 sobre error-bg */
 
-  /* Tipografia */
-  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-size-base: 16px;
+  /* Estados de feedback (RF-14/B.4) */
+  --mj-color-info-bg: #eef6ff;
+  --mj-color-info-text: #0b4a8f; /* 8.06:1 */
+  --mj-color-error-bg: #fdecec;
+  --mj-color-error-text: #8a1c1c; /* 8.13:1 */
 
-  /* Radios y sombras */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 16px;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+  /* --- Espaciado (escala base 4px) --- */
+  --mj-space-1: 4px;
+  --mj-space-2: 8px;
+  --mj-space-3: 12px;
+  --mj-space-4: 16px;
+  --mj-space-5: 24px;
+  --mj-space-6: 32px;
+  --mj-space-7: 48px;
+  --mj-space-8: 64px;
+
+  /* --- Tipografia --- */
+  --mj-font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mj-font-size-display: 2.5rem;
+  --mj-font-size-h1: 2rem;
+  --mj-font-size-h2: 1.375rem;
+  --mj-font-size-h3: 1.125rem;
+  --mj-font-size-body: 1rem;
+  --mj-font-size-caption: 0.85rem;
+  --mj-font-weight-regular: 400;
+  --mj-font-weight-medium: 500;
+  --mj-font-weight-semibold: 600;
+  --mj-line-height-tight: 1.2;
+  --mj-line-height-base: 1.5;
+  --mj-line-height-relaxed: 1.7;
+
+  /* --- Radios y sombras --- */
+  --mj-radius-sm: 4px;
+  --mj-radius-md: 8px;
+  --mj-radius-lg: 16px;
+  --mj-radius-pill: 999px;
+  --mj-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --mj-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+
+  /* --- Movimiento (respetar prefers-reduced-motion, ver mas abajo) --- */
+  --mj-duration-fast: 100ms;
+  --mj-duration-base: 200ms;
+  --mj-duration-slow: 320ms;
+  --mj-easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* --- Z-index --- */
+  --mj-z-dropdown: 10;
+  --mj-z-modal: 100;
+  --mj-z-toast: 1000;
+
+  /* --- Breakpoints (referencia: CSS no permite var() dentro de @media,
+     los valores literales de abajo deben mantenerse en sync con estos) --- */
+  --mj-breakpoint-sm: 480px;
+  --mj-breakpoint-md: 768px;
+  --mj-breakpoint-lg: 1024px;
 }
 
 /* RF-15: modo oscuro es requisito del MVP en specs.md v1.1 (antes diferido a Fase 2).
-   Este prototipo aun no incluye el toggle de tema; se deja el bloque listo para
-   cuando se implemente (ver docs/prototype-spec.md C.10). */
+   Este prototipo aun no incluye el toggle manual de tema (docs/prototype-spec.md C.10);
+   por ahora sigue automaticamente prefers-color-scheme. Cada valor fue verificado
+   por separado contra los minimos de contraste (no es solo la escala de grises invertida). */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #1d1d1f;
-    --color-surface: #2c2c2e;
-    --color-text: #f5f5f7;
-    --color-text-secondary: #a1a1a6;
-    --color-border: #3a3a3c;
-    --color-info-bg: #12263d;
-    --color-info-text: #bcdcff;
-    --color-error-bg: #3a1414;
-    --color-error-text: #ffb4ab;
+    --mj-color-bg-canvas: #1d1d1f;
+    --mj-color-bg-surface: #2c2c2e;
+    --mj-color-border: #3a3a3c;
+    --mj-color-text-primary: #f5f5f7; /* 15.46:1 sobre bg-canvas */
+    --mj-color-text-secondary: #a1a1a6; /* 6.55:1 sobre bg-canvas / 5.42:1 sobre bg-surface */
+
+    /* Link mas claro que el azul de boton: #0071e3 da solo 3.58:1 sobre fondo oscuro
+       (insuficiente para texto). #4da3ff da 6.41:1. */
+    --mj-color-link: #4da3ff;
+
+    /* Prioridad: los tonos claros no alcanzan 4.5:1 sobre bg-surface oscuro
+       (ej. baja quedaba en 2.59:1); se usan variantes mas claras y saturadas. */
+    --mj-color-priority-baja: #4ade80; /* 8.0:1 sobre bg-surface oscuro */
+    --mj-color-priority-media: #fbbf24; /* 8.35:1 */
+    --mj-color-priority-alta: #f87171; /* 5.04:1 */
+
+    --mj-color-danger: #f87171; /* 5.89:1 sobre error-bg oscuro (el rojo claro anterior quedaba en 3.02:1) */
+
+    --mj-color-info-bg: #12263d;
+    --mj-color-info-text: #bcdcff; /* 10.81:1 */
+    --mj-color-error-bg: #3a1414;
+    --mj-color-error-text: #ffb4ab; /* 9.59:1 */
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
@@ -63,18 +131,33 @@
 
 body {
   margin: 0;
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-base);
-  background: var(--color-bg);
-  color: var(--color-text);
+  font-family: var(--mj-font-family-base);
+  font-size: var(--mj-font-size-body);
+  line-height: var(--mj-line-height-base);
+  background: var(--mj-color-bg-canvas);
+  color: var(--mj-color-text-primary);
+}
+
+h1 {
+  font-size: var(--mj-font-size-h1);
+  font-weight: var(--mj-font-weight-semibold);
+  line-height: var(--mj-line-height-tight);
+  margin: 0 0 var(--mj-space-2);
+}
+
+h2 {
+  font-size: var(--mj-font-size-h2);
+  font-weight: var(--mj-font-weight-semibold);
+  line-height: var(--mj-line-height-tight);
+  margin: 0 0 var(--mj-space-2);
 }
 
 a {
-  color: var(--color-primary);
+  color: var(--mj-color-link);
 }
 
 :focus-visible {
-  outline: 3px solid var(--color-focus-ring);
+  outline: 3px solid var(--mj-color-focus-ring);
   outline-offset: 2px;
 }
 
@@ -88,58 +171,60 @@ a {
 }
 
 .mj-text-secondary {
-  color: var(--color-text-secondary);
+  color: var(--mj-color-text-secondary);
 }
 
 .mj-hint {
-  font-size: 0.85em;
-  margin-top: var(--space-xs);
+  font-size: var(--mj-font-size-caption);
+  margin-top: var(--mj-space-1);
 }
 
 .mj-page {
   max-width: 1100px;
   margin: 0 auto;
-  padding: var(--space-lg);
+  padding: var(--mj-space-5);
 }
 
 .mj-page-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-md);
-  margin-bottom: var(--space-lg);
+  gap: var(--mj-space-4);
+  margin-bottom: var(--mj-space-5);
   flex-wrap: wrap;
 }
 
 .mj-page-header-actions {
   display: flex;
-  gap: var(--space-sm);
+  gap: var(--mj-space-2);
 }
 
 .mj-breadcrumb {
   display: inline-block;
-  margin-bottom: var(--space-xs);
+  margin-bottom: var(--mj-space-1);
   text-decoration: none;
 }
 
 .mj-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  padding: var(--space-lg);
+  background: var(--mj-color-bg-surface);
+  border: 1px solid var(--mj-color-border);
+  border-radius: var(--mj-radius-md);
+  box-shadow: var(--mj-shadow-sm);
+  padding: var(--mj-space-5);
 }
 
 .mj-button {
   font-family: inherit;
-  font-size: 1em;
+  font-size: var(--mj-font-size-body);
   min-height: 44px;
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text);
+  padding: var(--mj-space-2) var(--mj-space-4);
+  border-radius: var(--mj-radius-sm);
+  border: 1px solid var(--mj-color-border);
+  background: var(--mj-color-bg-surface);
+  color: var(--mj-color-text-primary);
   cursor: pointer;
+  transition: background-color var(--mj-duration-fast) var(--mj-easing-standard),
+    opacity var(--mj-duration-fast) var(--mj-easing-standard);
 }
 
 .mj-button:disabled {
@@ -148,40 +233,40 @@ a {
 }
 
 .mj-button--primary {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-primary-contrast);
+  background: var(--mj-color-action-primary);
+  border-color: var(--mj-color-action-primary);
+  color: var(--mj-color-text-on-primary);
 }
 
 .mj-button--destructive {
-  background: var(--color-error-bg);
-  border-color: var(--color-danger);
-  color: var(--color-error-text);
+  background: var(--mj-color-error-bg);
+  border-color: var(--mj-color-danger);
+  color: var(--mj-color-error-text);
 }
 
 .mj-button--icon {
   min-width: 44px;
-  padding: var(--space-xs);
+  padding: var(--mj-space-1);
 }
 
 .mj-field {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
-  margin-bottom: var(--space-md);
+  gap: var(--mj-space-1);
+  margin-bottom: var(--mj-space-4);
 }
 
 .mj-field input,
 .mj-field select,
 .mj-field textarea {
   font-family: inherit;
-  font-size: 1em;
+  font-size: var(--mj-font-size-body);
   min-height: 44px;
-  padding: var(--space-sm);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  background: var(--color-bg);
-  color: var(--color-text);
+  padding: var(--mj-space-2);
+  border-radius: var(--mj-radius-sm);
+  border: 1px solid var(--mj-color-border);
+  background: var(--mj-color-bg-canvas);
+  color: var(--mj-color-text-primary);
 }
 
 .mj-field textarea {
@@ -191,75 +276,75 @@ a {
 .mj-checkbox-row {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--mj-space-2);
   min-height: 44px;
 }
 
 .mj-banner {
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-sm);
-  margin-bottom: var(--space-md);
+  padding: var(--mj-space-2) var(--mj-space-4);
+  border-radius: var(--mj-radius-sm);
+  margin-bottom: var(--mj-space-4);
 }
 
 .mj-banner--error {
-  background: var(--color-error-bg);
-  color: var(--color-error-text);
+  background: var(--mj-color-error-bg);
+  color: var(--mj-color-error-text);
 }
 
 .mj-banner--info {
-  background: var(--color-info-bg);
-  color: var(--color-info-text);
+  background: var(--mj-color-info-bg);
+  color: var(--mj-color-info-text);
 }
 
 .mj-badge {
   display: inline-block;
-  font-size: 0.8em;
-  padding: 2px var(--space-sm);
-  border-radius: var(--radius-lg);
-  background: var(--color-border);
-  color: var(--color-text);
+  font-size: var(--mj-font-size-caption);
+  padding: 2px var(--mj-space-2);
+  border-radius: var(--mj-radius-pill);
+  background: var(--mj-color-border);
+  color: var(--mj-color-text-primary);
 }
 
 .mj-badge--prioridad-baja {
   background: transparent;
-  color: var(--color-prioridad-baja);
-  border: 1px solid var(--color-prioridad-baja);
+  color: var(--mj-color-priority-baja);
+  border: 1px solid var(--mj-color-priority-baja);
 }
 
 .mj-badge--prioridad-media {
   background: transparent;
-  color: var(--color-prioridad-media);
-  border: 1px solid var(--color-prioridad-media);
+  color: var(--mj-color-priority-media);
+  border: 1px solid var(--mj-color-priority-media);
 }
 
 .mj-badge--prioridad-alta {
   background: transparent;
-  color: var(--color-prioridad-alta);
-  border: 1px solid var(--color-prioridad-alta);
+  color: var(--mj-color-priority-alta);
+  border: 1px solid var(--mj-color-priority-alta);
 }
 
 .mj-empty-state {
   text-align: center;
-  padding: var(--space-xl);
-  color: var(--color-text-secondary);
+  padding: var(--mj-space-6);
+  color: var(--mj-color-text-secondary);
 }
 
 .mj-project-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: var(--space-md);
+  gap: var(--mj-space-4);
 }
 
 .mj-project-card {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--mj-space-2);
   text-decoration: none;
   color: inherit;
 }
 
 .mj-inline-form {
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--mj-space-5);
 }
 
 .mj-auth-screen {
@@ -267,7 +352,7 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-lg);
+  padding: var(--mj-space-5);
 }
 
 .mj-auth-card {
@@ -276,48 +361,48 @@ a {
 }
 
 .mj-auth-hint {
-  margin-top: var(--space-md);
+  margin-top: var(--mj-space-4);
 }
 
 .mj-board {
   display: flex;
-  gap: var(--space-md);
+  gap: var(--mj-space-4);
   overflow-x: auto;
-  padding-bottom: var(--space-md);
+  padding-bottom: var(--mj-space-4);
 }
 
 .mj-board-column {
   flex: 1 0 260px;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-md);
+  background: var(--mj-color-bg-canvas);
+  border: 1px solid var(--mj-color-border);
+  border-radius: var(--mj-radius-md);
+  padding: var(--mj-space-4);
   min-height: 200px;
 }
 
 .mj-ticket-card {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
-  margin-top: var(--space-md);
-  padding: var(--space-md);
+  gap: var(--mj-space-2);
+  margin-top: var(--mj-space-4);
+  padding: var(--mj-space-4);
 }
 
 .mj-ticket-card-title {
   background: none;
   border: none;
   padding: 0;
-  font-size: 1em;
-  font-weight: 600;
+  font-size: var(--mj-font-size-body);
+  font-weight: var(--mj-font-weight-semibold);
   text-align: left;
-  color: var(--color-text);
+  color: var(--mj-color-text-primary);
   cursor: pointer;
   min-height: 44px;
 }
 
 .mj-avatar-row {
   display: flex;
-  gap: var(--space-xs);
+  gap: var(--mj-space-1);
 }
 
 .mj-avatar {
@@ -327,14 +412,38 @@ a {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--color-primary);
-  color: var(--color-primary-contrast);
+  background: var(--mj-color-action-primary);
+  color: var(--mj-color-text-on-primary);
   font-size: 0.7em;
-  font-weight: 600;
+  font-weight: var(--mj-font-weight-semibold);
 }
 
 .mj-move-select select {
   width: 100%;
+}
+
+/* Skeleton de carga (docs/prototype-spec.md B.4 / C.3 / C.4): reemplaza los
+   textos planos "Cargando..." por un placeholder visual, respetando reduced-motion. */
+.mj-skeleton {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    var(--mj-color-border) 25%,
+    var(--mj-color-bg-surface) 50%,
+    var(--mj-color-border) 75%
+  );
+  background-size: 200% 100%;
+  border-radius: var(--mj-radius-sm);
+  animation: mj-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes mj-skeleton-pulse {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .mj-drawer-overlay {
@@ -343,29 +452,62 @@ a {
   background: rgba(0, 0, 0, 0.4);
   display: flex;
   justify-content: flex-end;
-  z-index: 100;
+  z-index: var(--mj-z-modal);
+  animation: mj-fade-in var(--mj-duration-base) var(--mj-easing-standard);
+}
+
+@keyframes mj-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .mj-drawer {
-  background: var(--color-surface);
+  background: var(--mj-color-bg-surface);
   width: 100%;
   max-width: 420px;
   height: 100%;
   overflow-y: auto;
-  padding: var(--space-lg);
-  box-shadow: var(--shadow-md);
+  padding: var(--mj-space-5);
+  box-shadow: var(--mj-shadow-md);
+  animation: mj-slide-in var(--mj-duration-base) var(--mj-easing-standard);
+}
+
+@keyframes mj-slide-in {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .mj-drawer-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--space-md);
+  margin-bottom: var(--mj-space-4);
 }
 
 .mj-drawer-footer {
   display: flex;
   justify-content: flex-end;
-  gap: var(--space-sm);
-  margin-top: var(--space-lg);
+  gap: var(--mj-space-2);
+  margin-top: var(--mj-space-5);
+}
+
+/* --mj-breakpoint-sm: 480px (mantener en sync con el token) */
+@media (max-width: 480px) {
+  .mj-page {
+    padding: var(--mj-space-4);
+  }
+
+  .mj-auth-screen {
+    padding: var(--mj-space-4);
+  }
 }

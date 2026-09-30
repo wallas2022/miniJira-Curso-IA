@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { useAnnouncer } from '../context/AnnouncerContext';
 import { api } from '../lib/api';
 import type { AuthUser, Prioridad, Ticket, UsuarioResumen } from '../types';
 
@@ -15,6 +16,7 @@ const PRIORIDADES: Prioridad[] = ['BAJA', 'MEDIA', 'ALTA'];
 
 // RF-08/RF-09a/RF-05/RF-01/RF-02 (docs/prototype-spec.md C.5): detalle de ticket, crear/editar.
 export function TicketDrawer({ proyectoId, ticket, users, currentUser, onClose, onSaved }: Props) {
+  const { announce } = useAnnouncer();
   const esEdicion = ticket !== null;
   const autorizado =
     !esEdicion ||
@@ -70,9 +72,12 @@ export function TicketDrawer({ proyectoId, ticket, users, currentUser, onClose, 
       } else {
         await api.createTicket({ proyectoId, titulo, descripcion, prioridad });
       }
+      announce(esEdicion ? `Ticket "${titulo}" guardado.` : `Ticket "${titulo}" creado.`);
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo guardar el ticket.');
+      const mensaje = err instanceof Error ? err.message : 'No se pudo guardar el ticket.';
+      setError(mensaje);
+      announce(mensaje, { assertive: true });
     } finally {
       setGuardando(false);
     }
@@ -85,9 +90,12 @@ export function TicketDrawer({ proyectoId, ticket, users, currentUser, onClose, 
     setError(null);
     try {
       await api.archiveTicket(ticket.id);
+      announce(`Ticket "${ticket.titulo}" archivado.`);
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo archivar el ticket.');
+      const mensaje = err instanceof Error ? err.message : 'No se pudo archivar el ticket.';
+      setError(mensaje);
+      announce(mensaje, { assertive: true });
       setGuardando(false);
     }
   };

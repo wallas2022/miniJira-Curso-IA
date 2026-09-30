@@ -1,5 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { SkeletonProjectGrid } from '../components/SkeletonLoader';
+import { useAnnouncer } from '../context/AnnouncerContext';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import type { Proyecto } from '../types';
@@ -7,6 +9,7 @@ import type { Proyecto } from '../types';
 // RF-04/RF-17: lista de proyectos visibles para el usuario actual (docs/prototype-spec.md C.3).
 export function ProjectsPage() {
   const { user, logout } = useAuth();
+  const { announce } = useAnnouncer();
   const [proyectos, setProyectos] = useState<Proyecto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -38,9 +41,12 @@ export function ProjectsPage() {
       setNombre('');
       setDescripcion('');
       setShowForm(false);
+      announce(`Proyecto "${nombre}" creado.`);
       cargar();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'No se pudo crear el proyecto.');
+      const mensaje = err instanceof Error ? err.message : 'No se pudo crear el proyecto.';
+      setFormError(mensaje);
+      announce(mensaje, { assertive: true });
     } finally {
       setGuardando(false);
     }
@@ -92,7 +98,7 @@ export function ProjectsPage() {
         </div>
       )}
 
-      {proyectos === null && !error && <p className="mj-text-secondary">Cargando proyectos...</p>}
+      {proyectos === null && !error && <SkeletonProjectGrid />}
 
       {proyectos?.length === 0 && (
         <div className="mj-empty-state">

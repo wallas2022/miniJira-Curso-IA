@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { SkeletonBoard } from '../components/SkeletonLoader';
 import { TicketCard } from '../components/TicketCard';
 import { TicketDrawer } from '../components/TicketDrawer';
+import { useAnnouncer } from '../context/AnnouncerContext';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import type { Estado, Proyecto, Ticket, UsuarioResumen } from '../types';
@@ -18,6 +20,7 @@ const ESTADOS: { value: Estado; label: string }[] = [
 export function BoardPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { announce } = useAnnouncer();
   const [proyecto, setProyecto] = useState<Proyecto | null>(null);
   const [tickets, setTickets] = useState<Ticket[] | null>(null);
   const [users, setUsers] = useState<UsuarioResumen[]>([]);
@@ -40,12 +43,16 @@ export function BoardPage() {
 
   const onMove = async (ticket: Ticket, estado: Estado) => {
     const previo = tickets;
+    const etiqueta = ESTADOS.find((e) => e.value === estado)?.label ?? estado;
     setTickets((prev) => prev?.map((t) => (t.id === ticket.id ? { ...t, estado } : t)) ?? prev);
     try {
       await api.moveTicket(ticket.id, estado);
+      announce(`"${ticket.titulo}" movido a ${etiqueta}.`);
     } catch (err) {
       setTickets(previo);
-      setError(err instanceof Error ? err.message : 'No se pudo mover el ticket.');
+      const mensaje = err instanceof Error ? err.message : 'No se pudo mover el ticket.';
+      setError(mensaje);
+      announce(mensaje, { assertive: true });
     }
   };
 
@@ -65,7 +72,8 @@ export function BoardPage() {
   if (!proyecto || !tickets || !user) {
     return (
       <main className="mj-page">
-        <p className="mj-text-secondary">Cargando tablero...</p>
+        <p className="mj-sr-only">Cargando tablero...</p>
+        <SkeletonBoard />
       </main>
     );
   }
