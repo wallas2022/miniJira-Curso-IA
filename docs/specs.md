@@ -53,17 +53,20 @@ Generado a partir de la transcripción del kick-off (24 de octubre) y de la sesi
 
 ## 3. Stack Tecnológico
 
-Confirmado formalmente (Decisión PO/PM, P13):
+Confirmado formalmente (Decisión PO/PM, P13), **actualizado en v1.2 (Decisión PO/PM, P14, 2026-09-30)**:
 
 | Capa | Tecnología |
 |------|-----------|
-| Frontend | React |
-| Backend | Node.js |
-| Base de datos | **SQLite** (relacional) |
-| Acceso a datos | **ORM Prisma** (migraciones y tipos generados) |
+| Frontend | **React 19** (antes React 18 — ver `docs/frontend-specs.md` decisión #10, revisada) |
+| Gestor de paquetes / repo | **pnpm workspaces (monorepo)**: `apps/web/` (frontend) + `packages/shared/` (tipos compartidos). Reemplaza el `frontend/` con npm de v1.1. |
+| Estilos | **Tailwind v4**. Reemplaza el enfoque anterior de CSS plano + Design Tokens propios (`CLAUDE.md`, `docs/frontend-specs.md` §1); los tokens ya definidos en `design.md`/`tokens.css` se portan al `@theme` de Tailwind, no se descartan. |
+| Backend | Node.js — **sin cambios** |
+| Base de datos | **SQLite** (relacional) — sin cambios |
+| Acceso a datos | **ORM Prisma** (migraciones y tipos generados) — sin cambios |
 
 - Se usa SQLite en lugar de PostgreSQL. Con ~10 usuarios la carga es baja; Prisma permite migrar a PostgreSQL en el futuro cambiando sobre todo la configuración del datasource.
-- Consecuencia: `CLAUDE.md` debe actualizarse para pasar el stack de "tentativo" a definitivo con SQLite + Prisma.
+- El cambio a monorepo pnpm + React 19 + Tailwind v4 no afecta al backend ni al modelo de datos; es exclusivamente una decisión de frontend/tooling.
+- Consecuencia: `CLAUDE.md` y `docs/frontend-specs.md` deben actualizarse para reflejar este stack (ver P14).
 
 ## 4. Supuestos
 
@@ -145,6 +148,7 @@ Confirmado formalmente (Decisión PO/PM, P13):
 | P11 | Dashboard | Fuera del MVP; se sustituye por vista simple de conteo | Sin cambios |
 | P12 | Estilo visual / modo oscuro | Estilo limpio en MVP; modo oscuro → Fase 2 | **Modo oscuro pasa a ser requisito del MVP** |
 | P13 | Stack | React + Node.js + SQLite + Prisma | Sin cambios |
+| P14 | Stack de frontend (v1.2, 2026-09-30) | React 18, npm, `frontend/` con CSS + Design Tokens propios | **React 19, monorepo pnpm (`apps/web/` + `packages/shared/`), Tailwind v4.** Reemplaza `frontend/`; backend y modelo de datos sin cambios. |
 
 ## 8. Riesgos
 

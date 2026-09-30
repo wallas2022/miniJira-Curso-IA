@@ -3,6 +3,8 @@
 > **Fuente:** `docs/specs.md` (v1.1, APROBADO), `docs/backlog.md`, `docs/test_plan.md`, `architecture/architecture.md`, `architecture/er_diagram.md` y `docs/prototype-spec.md`. Este documento resuelve, para el **frontend**, todos los puntos que esos documentos dejaban pendientes o ambiguos (ver §0). Ante cualquier conflicto futuro, `specs.md` sigue siendo la fuente única de verdad (`CLAUDE.md`); si esta especificación necesita cambiar como consecuencia, se actualiza aquí explícitamente.
 >
 > **Estado:** pendiente de confirmación del usuario. No se escribe código de implementación hasta que este documento sea aprobado.
+>
+> **Actualización 2026-09-30 (Decisión PO/PM, P14 en `docs/specs.md` §7):** se reemplaza el stack de frontend descrito en §1 (React 18, npm, `frontend/`, CSS plano) por **React 19 + pnpm workspaces (monorepo `apps/web/` + `packages/shared/`) + Tailwind v4**. Los puntos §0.10 y §1 quedan superados por esta decisión; el resto del documento (modelo de datos, reglas de negocio, matriz de permisos, arquitectura de componentes) sigue vigente sin cambios.
 
 ---
 
@@ -31,20 +33,23 @@ Todas confirmadas por el Product Owner en dos rondas de preguntas (30/09/2026 �
 
 ## 1. Stack y versiones
 
-| Capa | Tecnología | Versión |
-|---|---|---|
-| Librería UI | React | `^18.3.1` |
-| Lenguaje | TypeScript | `^5.5.4` |
-| Build tool / dev server | Vite | `^5.4.x` |
-| Enrutamiento | React Router (`react-router-dom`) | `^6.26.x` |
-| Datos remotos / cache | TanStack Query (`@tanstack/react-query`) | `^5.x` |
-| Formularios | React Hook Form | `^7.x` |
-| Validación de formularios | Zod + `@hookform/resolvers` | `^3.x` |
-| Drag-and-drop del tablero | `@dnd-kit/core` + `@dnd-kit/sortable` | `^6.x` / `^8.x` |
-| Testing | Vitest + React Testing Library + `@testing-library/user-event` + `jsdom` | `^2.x` / `^16.x` / `^14.x` / `^25.x` |
-| Estilos | CSS plano con Design Tokens propios (sin framework de UI pesado, `CLAUDE.md`) | — |
+> **Superado por la actualización del 2026-09-30 (P14)** — se conserva la tabla original de v1.1 tachada como referencia histórica; la columna "Versión vigente" indica el reemplazo.
 
-No se introduce ningún framework de UI (Material UI, Chakra, Tailwind, etc.): `CLAUDE.md` lo excluye salvo indicación explícita en `specs.md`, y no la hay.
+| Capa | Tecnología | Versión v1.1 (histórica) | Versión vigente (P14) |
+|---|---|---|---|
+| Gestor de paquetes / repo | pnpm workspaces (monorepo) | — (npm, repo único) | `pnpm` con `apps/web/` + `packages/shared/` |
+| Librería UI | React | `^18.3.1` | `^19.x` |
+| Lenguaje | TypeScript | `^5.5.4` | `^5.5.4` (sin cambio) |
+| Build tool / dev server | Vite | `^5.4.x` | `^6.x` (requerido por React 19 / Tailwind v4) |
+| Estilos | CSS plano con Design Tokens propios | — | **Tailwind v4** (`@theme`), migrando los tokens de `design.md`/`tokens.css` |
+| Enrutamiento | React Router (`react-router-dom`) | `^6.26.x` | `^6.26.x` (sin cambio, pendiente de reintroducir en `apps/web`) |
+| Datos remotos / cache | TanStack Query (`@tanstack/react-query`) | `^5.x` | `^5.x` (sin cambio, pendiente de reintroducir) |
+| Formularios | React Hook Form | `^7.x` | `^7.x` (sin cambio, pendiente de reintroducir) |
+| Validación de formularios | Zod + `@hookform/resolvers` | `^3.x` | `^3.x` (sin cambio, pendiente de reintroducir) |
+| Drag-and-drop del tablero | `@dnd-kit/core` + `@dnd-kit/sortable` | `^6.x` / `^8.x` | sin cambio, pendiente de reintroducir |
+| Testing | Vitest + React Testing Library + `@testing-library/user-event` + `jsdom` | `^2.x` / `^16.x` / `^14.x` / `^25.x` | sin cambio, pendiente de reintroducir |
+
+`CLAUDE.md` se actualiza junto con esta decisión: ya no excluye Tailwind (P14 lo introduce explícitamente en `specs.md`, cumpliendo la condición que el propio `CLAUDE.md` exigía). Los ítems marcados "pendiente de reintroducir" no forman parte del scaffold inicial del monorepo (solo Hola Mundo); se reincorporan al migrar la lógica de negocio de `frontend/` (ahora retirado) a `apps/web/`.
 
 ---
 
@@ -256,8 +261,10 @@ Por WCAG 2.1 AA (`docs/prototype-spec.md` B.2), toda interacción de arrastrar y
 
 ## 6. Estructura de carpetas
 
+> Actualizado por P14: la carpeta `frontend/` de v1.1 se reemplaza por `apps/web/` dentro de un monorepo pnpm; se agrega `packages/shared/` para tipos compartidos (hoy consumidos solo por `apps/web/`, pensado para un futuro segundo consumidor). El árbol interno de `src/` descrito abajo para el frontend v1.1 sigue siendo el objetivo de la migración (aún no completada — el scaffold inicial es solo Hola Mundo).
+
 ```
-frontend/
+apps/web/
 ├─ src/
 │  ├─ main.tsx
 │  ├─ App.tsx                     # definicion de rutas

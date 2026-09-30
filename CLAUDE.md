@@ -4,12 +4,13 @@
 Mini Jira es un gestor de tareas/tickets simplificado (estilo Jira) para equipos pequeños: creación de proyectos, tableros con columnas de estado (To Do / In Progress / Done), tarjetas con asignación, prioridad y comentarios básicos. El foco es un producto simple, usable y correcto antes que feature-rich.
 
 ## Stack definitivo
-Confirmado en `docs/specs.md` (Decisión PO/PM, P13):
-- **Frontend:** React + TypeScript, Vite
-- **Backend:** Node.js + TypeScript (API REST)
+Confirmado en `docs/specs.md` (Decisión PO/PM, P13, actualizado por **P14** el 2026-09-30):
+- **Repo:** monorepo **pnpm workspaces** — `apps/web/` (frontend) + `packages/shared/` (tipos compartidos).
+- **Frontend:** React **19** + TypeScript, Vite, dentro de `apps/web/`.
+- **Backend:** Node.js + TypeScript (API REST) — sin cambios, fuera del monorepo pnpm.
 - **Base de datos:** SQLite
 - **Acceso a datos:** ORM Prisma (migraciones y tipos generados)
-- **Estilos:** CSS con Design Tokens propios (sin framework de UI pesado salvo que specs.md lo indique)
+- **Estilos:** **Tailwind v4** (reemplaza el CSS plano + Design Tokens propios de v1.1; los tokens existentes se portan al `@theme` de Tailwind, no se descartan — ver `design.md`).
 
 Cualquier cambio de stack se decide primero en `specs.md`, luego se refleja aquí.
 

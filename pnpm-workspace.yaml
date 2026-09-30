@@ -1,0 +1,7 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Solo instala versiones de paquetes publicadas hace más de 1440 minutos (1 día).
+# Mitiga supply-chain attacks vía paquetes recién publicados/comprometidos.
+minimumReleaseAge: 1440
