@@ -1,13 +1,35 @@
-import type { Greeting } from '@minijira/shared'
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { AppShell } from './app/AppShell';
+import { ProjectsPage } from './features/projects/ProjectsPage';
 
-const greeting: Greeting = { message: 'Hola Mundo' }
+// Placeholder temporal: BoardPage (tablero de un proyecto) no se construye
+// en esta fase (fuera de alcance, ver plan de la Vista de Proyectos).
+function BoardPagePlaceholder() {
+  return <p className="p-(--mj-space-5) text-body text-secondary">Tablero en construcción.</p>;
+}
 
 function App() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-white">
-      <h1 className="text-4xl font-semibold text-gray-900">{greeting.message}</h1>
-    </main>
-  )
+    <Routes>
+      <Route path="/" element={<Navigate to="/proyectos" replace />} />
+      <Route
+        path="/proyectos"
+        element={
+          <AppShell>
+            <ProjectsPage />
+          </AppShell>
+        }
+      />
+      <Route
+        path="/proyectos/:id"
+        element={
+          <AppShell>
+            <BoardPagePlaceholder />
+          </AppShell>
+        }
+      />
+    </Routes>
+  );
 }
 
-export default App
+export default App;

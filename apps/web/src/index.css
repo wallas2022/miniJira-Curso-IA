@@ -1,1 +1,76 @@
 @import "tailwindcss";
+@import "./styles/tokens.css";
+
+/*
+ * Mapeo de tokens semánticos (--mj-*, tokens.css) a los namespaces de
+ * Tailwind v4 (design.md §8). Las utilidades generadas (bg-surface,
+ * text-primary, rounded-md, shadow-card, ease-standard, duration-fast...)
+ * referencian directamente las custom properties --mj-*, así que el tema
+ * oscuro (prefers-color-scheme, definido en tokens.css) se sigue aplicando
+ * sin variantes `dark:` — cambia el valor de la variable, no la clase.
+ */
+@theme {
+  /*
+   * Nombres de clave SIN el segmento redundante que ya aporta el prefijo de
+   * utilidad Tailwind (ej. --color-surface, no --color-bg-surface, para que
+   * la utilidad generada sea `bg-surface` y no `bg-bg-surface`).
+   */
+  --color-canvas: var(--mj-color-bg-canvas);
+  --color-surface: var(--mj-color-bg-surface);
+  --color-border: var(--mj-color-border);
+  --color-primary: var(--mj-color-text-primary);
+  --color-secondary: var(--mj-color-text-secondary);
+  --color-on-primary: var(--mj-color-text-on-primary);
+  --color-action-primary: var(--mj-color-action-primary);
+  --color-link: var(--mj-color-link);
+  --color-focus-ring: var(--mj-color-focus-ring);
+  --color-priority-baja: var(--mj-color-priority-baja);
+  --color-priority-media: var(--mj-color-priority-media);
+  --color-priority-alta: var(--mj-color-priority-alta);
+  --color-danger: var(--mj-color-danger);
+  --color-info-bg: var(--mj-color-info-bg);
+  --color-info-text: var(--mj-color-info-text);
+  --color-error-bg: var(--mj-color-error-bg);
+  --color-error-text: var(--mj-color-error-text);
+
+  /* Tipografía — font-normal/medium/semibold ya coinciden con la escala
+     default de Tailwind (400/500/600), no se remapean. */
+  --font-sans: var(--mj-font-family-base);
+  --text-display: var(--mj-font-size-display);
+  --text-h1: var(--mj-font-size-h1);
+  --text-h1--line-height: var(--mj-line-height-tight);
+  --text-h2: var(--mj-font-size-h2);
+  --text-h2--line-height: var(--mj-line-height-tight);
+  --text-h3: var(--mj-font-size-h3);
+  --text-body: var(--mj-font-size-body);
+  --text-body--line-height: var(--mj-line-height-base);
+  --text-caption: var(--mj-font-size-caption);
+
+  /* Radios y sombras (nombres semánticos de design.md §5: shadow-sm = "card",
+     shadow-md = "modal / drawer") */
+  --radius-sm: var(--mj-radius-sm);
+  --radius-md: var(--mj-radius-md);
+  --radius-lg: var(--mj-radius-lg);
+  --radius-pill: var(--mj-radius-pill);
+  --shadow-card: var(--mj-shadow-sm);
+  --shadow-modal: var(--mj-shadow-md);
+
+  /* Movimiento */
+  --duration-fast: var(--mj-duration-fast);
+  --duration-base: var(--mj-duration-base);
+  --duration-slow: var(--mj-duration-slow);
+  --ease-standard: var(--mj-easing-standard);
+}
+
+/*
+ * Espaciado: NO se remapea la escala numérica de Tailwind (--spacing-4,
+ * --spacing-5, ...) porque su base de 0.25rem no coincide 1:1 con la escala
+ * de 4px de --mj-space-* (ej. Tailwind p-5 = 20px, --mj-space-5 = 24px).
+ * Los componentes referencian el espaciado con la sintaxis de variable
+ * arbitraria de Tailwind v4, ej. `p-(--mj-space-5)`, `gap-(--mj-space-4)`.
+ */
+
+body {
+  background-color: var(--mj-color-bg-canvas);
+  color: var(--mj-color-text-primary);
+}
