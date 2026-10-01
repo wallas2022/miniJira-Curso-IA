@@ -1,16 +1,23 @@
+import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Badge } from '../../components/Badge';
-import type { Estado, Ticket } from '../../types';
+import type { Estado } from '../../types';
+import { useTicketsByStatus } from './board.store';
 import { TicketCard } from './TicketCard';
 
 export interface BoardColumnProps {
   estado: Estado;
   titulo: string;
-  tickets: Ticket[];
+  proyectoId: string;
 }
 
-export function BoardColumn({ titulo, tickets }: BoardColumnProps) {
+export function BoardColumn({ estado, titulo, proyectoId }: BoardColumnProps) {
+  const tickets = useTicketsByStatus(proyectoId, estado);
+  const { setNodeRef } = useDroppable({ id: estado });
+
   return (
     <section
+      ref={setNodeRef}
       aria-label={titulo}
       className="flex w-[280px] shrink-0 flex-col gap-(--mj-space-3) rounded-md border border-border bg-surface p-(--mj-space-3)"
     >
@@ -23,13 +30,18 @@ export function BoardColumn({ titulo, tickets }: BoardColumnProps) {
           Sin tickets
         </p>
       ) : (
-        <ul className="flex flex-col gap-(--mj-space-2) overflow-y-auto">
-          {tickets.map((ticket) => (
-            <li key={ticket.id}>
-              <TicketCard ticket={ticket} />
-            </li>
-          ))}
-        </ul>
+        <SortableContext
+          items={tickets.map((ticket) => ticket.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <ul className="flex flex-col gap-(--mj-space-2) overflow-y-auto">
+            {tickets.map((ticket) => (
+              <li key={ticket.id}>
+                <TicketCard ticket={ticket} />
+              </li>
+            ))}
+          </ul>
+        </SortableContext>
       )}
     </section>
   );

@@ -257,6 +257,10 @@ Cada mutación de TanStack Query invalida las `queryKey` afectadas en `onSuccess
 
 Por WCAG 2.1 AA (`docs/prototype-spec.md` B.2), toda interacción de arrastrar y soltar debe tener una alternativa de teclado equivalente. El `<select>` de cada tarjeta cumple ese rol y permanece visible (no oculto tras el drag-and-drop); ambos disparan la misma mutación y quedan sujetos a la misma regla de permisos (§4.1).
 
+### 5.4 Estado del tablero — fase actual (divergencia temporal con TanStack Query)
+
+> Actualizado tras la integración de `board.store.ts`: mientras no exista una API real que respaldar, el tablero (`features/tickets/KanbanBoard.tsx`, `BoardColumn.tsx`, `TicketCard.tsx`) usa un store de **Zustand** (`useBoardStore` / `useTicketsByStatus` en `features/tickets/board.store.ts`) como estado de tablero *client-side*, en lugar del hook `useMoverTicket` de TanStack Query descrito en §5.1/§5.2. El store aplica actualización optimista (el cambio de `estado` se refleja de inmediato) y revierte automáticamente si la llamada simulada (`features/tickets/ticketsApi.ts`, `moverTicketRemoto`) rechaza, mostrando un banner de error (`role="alert"`). Tanto el drag-and-drop (`@dnd-kit/core` + `@dnd-kit/sortable`) como el `<select>` "Mover a…" de §5.3 llaman a la misma acción `moveTicket()` del store, preservando el requisito de §5.3. **Esta decisión es temporal**: cuando se integre la API real, `useBoardStore` se reemplaza por `useMoverTicket` (TanStack Query) siguiendo el patrón de §5.2, y este store deja de usarse para estado de tickets.
+
 ---
 
 ## 6. Estructura de carpetas
