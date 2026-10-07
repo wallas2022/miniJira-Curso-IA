@@ -1,0 +1,1388 @@
+openapi: 3.1.0
+info:
+  title: Mini Jira API
+  version: 0.2.0
+  description: "Endpoints P0, P1 y P2 de docs/api-contract.md (los de lock de §6
+    quedan fuera, por decisión del contrato). Fase sin autenticación: todos los
+    endpoints son anónimos; los campos TEMPORAL sustituyen al usuario
+    autenticado."
+servers:
+  - url: /api
+components:
+  schemas:
+    LoginResponseEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/LoginResponse"
+        error:
+          $ref: "#/components/schemas/ProblemDetails"
+      required:
+        - data
+        - error
+    LoginResponse:
+      type:
+        - object
+        - "null"
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/UsuarioResumen"
+      required:
+        - token
+        - user
+    UsuarioResumen:
+      type: object
+      properties:
+        id:
+          type: string
+          example: user-1
+        email:
+          type: string
+          example: lucia.fernandez@example.com
+        nombre:
+          type: string
+          example: Lucía Fernández
+        rol:
+          $ref: "#/components/schemas/Rol"
+        activo:
+          type: boolean
+      required:
+        - id
+        - email
+        - nombre
+        - rol
+        - activo
+    Rol:
+      type: string
+      enum:
+        - ADMIN
+        - USUARIO
+    ProblemDetails:
+      type:
+        - object
+        - "null"
+      properties:
+        type:
+          type: string
+          example: https://minijira.dev/errors/validation
+        title:
+          type: string
+          example: Validation Failed
+        status:
+          type: integer
+          example: 400
+        detail:
+          type: string
+        instance:
+          type: string
+          description: Path de la request.
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+            required:
+              - field
+              - message
+          description: Solo en 400 de validación.
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - instance
+    ErrorEnvelope:
+      type: object
+      properties:
+        data:
+          type: "null"
+        error:
+          $ref: "#/components/schemas/ProblemDetails"
+      required:
+        - data
+        - error
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+          minLength: 1
+          example: lucia.fernandez@example.com
+        password:
+          type: string
+          minLength: 1
+          example: MiniJira2026!
+      required:
+        - email
+        - password
+    UsuarioResumenEnvelope:
+      type: object
+      properties:
+        data:
+          allOf:
+            - $ref: "#/components/schemas/UsuarioResumen"
+            - type:
+                - object
+                - "null"
+        error:
+          $ref: "#/components/schemas/ProblemDetails"
+      required:
+        - data
+        - error
+    ProyectoPageEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ProyectoPage"
+        error:
+          $ref: "#/components/schemas/ProblemDetails"
+      required:
+        - data
+        - error
+    ProyectoPage:
+      type:
+        - object
+        - "null"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Proyecto"
+        nextCursor:
+          type:
+            - string
+            - "null"
+          description: null = no hay más páginas.
+      required:
+        - items
+        - nextCursor
+    Proyecto:
+      type: object
+      properties:
+        id:
+          type: string
+          example: bd-proy-1
+        nombre:
+          type: string
+        descripcion:
+          type:
+            - string
+            - "null"
+        creadorId:
+          type: string
+        creador:
+          $ref: "#/components/schemas/UsuarioBasico"
+        creadoEn:
+          type: string
+          description: ISO 8601
+        ticketsAbiertos:
+          type: integer
+          description: "Calculado: tickets no archivados con estado distinto de TERMINADO."
+      required:
+        - id
+        - nombre
+        - descripcion
+        - creadorId
+        - creador
+        - creadoEn
+        - ticketsAbiertos
+    UsuarioBasico:
+      type: object
+      properties:
+        id:
+          type: string
+        nombre:
+          type: string
+        email:
+          type: string
+      required:
+        - id
+        - nombre
+        - email
+    TicketPageEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/TicketPage"
+        error:
+          $ref: "#/components/schemas/ProblemDetails"
+      required:
+        - data
+        - error
+    TicketPage:
+      type:
+        - object
+        - "null"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Ticket"
+        nextCursor:
+          type:
+            - string
+            - "null"
+          description: null = no hay más páginas.
+      required:
+        - items
+        - nextCursor
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: string
+          example: bd-tk-1
+        titulo:
+          type: string
+        descripcion:
+          type:
+            - string
+            - "null"
+        estado:
+          $ref: "#/components/schemas/Estado"
+        prioridad:
+          $ref: "#/components/schemas/Prioridad"
+        fecha:
+          type:
+            - string
+            - "null"
+          description: Fecha opcional (YYYY-MM-DD).
+        proyectoId:
+          type: string
+        creadorId:
+          type: string
+        creador:
+          $ref: "#/components/schemas/UsuarioBasico"
+        archivado:
+          type: boolean
+        archivadoPorId:
+          type:
+            - string
+            - "null"
+        creadoEn:
+          type: string
+        actualizadoEn:
+          type: string
+        cerradoEn:
+          type:
+            - string
+            - "null"
+        responsables:
+          type: array
+          items:
+            $ref: "#/components/schemas/Responsable"
+        etiquetas:
+          type: array
+          items:
+            $ref: "#/components/schemas/Etiqueta"
+      required:
+        - id
+        - titulo
+        - descripcion
+        - estado
+        - prioridad
+        - fecha
+        - proyectoId
+        - creadorId
+        - creador
+        - archivado
+        - archivadoPorId
+        - creadoEn
+        - actualizadoEn
+        - cerradoEn
+        - responsables
+        - etiquetas
+    Estado:
+      type: string
+      enum:
+        - POR_HACER
+        - EN_PROGRESO
+        - REVIEW
+        - TERMINADO
+    Prioridad:
+      type: string
+      enum:
+        - BAJA
+        - MEDIA
+        - ALTA
+    Responsable:
+      type: object
+      properties:
+        userId:
+          type: string
+        user:
+          $ref: "#/components/schemas/UsuarioBasico"
+      required:
+        - userId
+        - user
+    Etiqueta:
+      type: object
+      properties:
+        id:
+          type: string
+          example: bd-etq-1
+        nombre:
+          type: string
+      required:
+        - id
+        - nombre
+    TicketEnvelope:
+      type: object
+      properties:
+        data:
+          allOf:
+            - $ref: "#/components/schemas/Ticket"
+            - type:
+                - object
+                - "null"
+        error:
+          $ref: "#/components/schemas/ProblemDetails"
+      required:
+        - data
+        - error
+    PatchTicketBody:
+      type: object
+      properties:
+        estado:
+          $ref: "#/components/schemas/Estado"
+        titulo:
+          type: string
+          minLength: 1
+        descripcion:
+          type:
+            - string
+            - "null"
+        prioridad:
+          $ref: "#/components/schemas/Prioridad"
+        fecha:
+          type:
+            - string
+            - "null"
+          pattern: ^\d{4}-\d{2}-\d{2}$
+        etiquetas:
+          type: array
+          items:
+            type: string
+            minLength: 1
+          description: IDs de etiquetas (reemplaza el conjunto actual).
+          example:
+            - bd-etq-1
+    LogoutEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/LogoutResponse"
+        error:
+          $ref: "#/components/schemas/ProblemDetails"
+      required:
+        - data
+        - error
+    LogoutResponse:
+      type:
+        - object
+        - "null"
+      properties:
+        ok:
+          type: boolean
+      required:
+        - ok
+    ProyectoEnvelope:
+      type: object
+      properties:
+        data:
+          allOf:
+            - $ref: "#/components/schemas/Proyecto"
+            - type:
+                - object
+                - "null"
+        error:
+          $ref: "#/components/schemas/ProblemDetails"
+      required:
+        - data
+        - error
+    CreateProjectBody:
+      type: object
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          example: Nuevo proyecto
+        descripcion:
+          type:
+            - string
+            - "null"
+        creadorId:
+          type: string
+          minLength: 1
+          description: "TEMPORAL (fase sin autenticación): sustituye al usuario
+            autenticado."
+          example: user-1
+      required:
+        - nombre
+        - creadorId
+    PatchProjectBody:
+      type: object
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+        descripcion:
+          type:
+            - string
+            - "null"
+    CreateTicketBody:
+      type: object
+      properties:
+        titulo:
+          type: string
+          minLength: 1
+          example: Nuevo ticket
+        descripcion:
+          type:
+            - string
+            - "null"
+        prioridad:
+          $ref: "#/components/schemas/Prioridad"
+        fecha:
+          type:
+            - string
+            - "null"
+          pattern: ^\d{4}-\d{2}-\d{2}$
+        etiquetas:
+          type: array
+          items:
+            type: string
+            minLength: 1
+          description: IDs de etiquetas.
+        creadorId:
+          type: string
+          minLength: 1
+          description: "TEMPORAL (fase sin autenticación): sustituye al usuario
+            autenticado."
+          example: user-1
+      required:
+        - titulo
+        - creadorId
+    AddResponsableBody:
+      type: object
+      properties:
+        userId:
+          type: string
+          minLength: 1
+          example: user-2
+      required:
+        - userId
+    ComentarioPageEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ComentarioPage"
+        error:
+          $ref: "#/components/schemas/ProblemDetails"
+      required:
+        - data
+        - error
+    ComentarioPage:
+      type:
+        - object
+        - "null"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Comentario"
+        nextCursor:
+          type:
+            - string
+            - "null"
+          description: null = no hay más páginas.
+      required:
+        - items
+        - nextCursor
+    Comentario:
+      type: object
+      properties:
+        id:
+          type: string
+        ticketId:
+          type: string
+        autorId:
+          type: string
+        autor:
+          $ref: "#/components/schemas/UsuarioBasico"
+        contenido:
+          type: string
+        creadoEn:
+          type: string
+          description: ISO 8601
+      required:
+        - id
+        - ticketId
+        - autorId
+        - autor
+        - contenido
+        - creadoEn
+    ComentarioEnvelope:
+      type: object
+      properties:
+        data:
+          allOf:
+            - $ref: "#/components/schemas/Comentario"
+            - type:
+                - object
+                - "null"
+        error:
+          $ref: "#/components/schemas/ProblemDetails"
+      required:
+        - data
+        - error
+    CreateComentarioBody:
+      type: object
+      properties:
+        contenido:
+          type: string
+          minLength: 1
+          example: Revisado, listo para QA.
+        autorId:
+          type: string
+          minLength: 1
+          description: "TEMPORAL (fase sin autenticación): sustituye al usuario
+            autenticado."
+          example: user-1
+      required:
+        - contenido
+        - autorId
+    ReporteCierreEnvelope:
+      type: object
+      properties:
+        data:
+          type:
+            - array
+            - "null"
+          items:
+            $ref: "#/components/schemas/ReporteCierre"
+        error:
+          $ref: "#/components/schemas/ProblemDetails"
+      required:
+        - data
+        - error
+    ReporteCierre:
+      type: object
+      properties:
+        proyectoId:
+          type: string
+        proyecto:
+          type: string
+        mes:
+          type: integer
+          example: 9
+        anio:
+          type: integer
+          example: 2026
+        cantidad:
+          type: integer
+      required:
+        - proyectoId
+        - proyecto
+        - mes
+        - anio
+        - cantidad
+  parameters: {}
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Iniciar sesión (P0, H1)
+      description: "Verifica email/contraseña. FASE SIN AUTENTICACIÓN: el `token`
+        devuelto es un marcador fijo, no un JWT, y ningún otro endpoint lo
+        exige."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Credenciales válidas.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponseEnvelope"
+        "400":
+          description: Validación fallida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Credenciales incorrectas (mensaje genérico).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: Error interno (mensaje genérico).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /auth/me:
+    get:
+      tags:
+        - Auth
+      summary: Usuario actual (P0, H1)
+      description: 'FASE SIN AUTENTICACIÓN: sin token no hay "usuario actual", así que
+        se identifica con el query param temporal `userId`.'
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            description: "TEMPORAL (fase sin autenticación): identifica al usuario porque no
+              hay token. Se elimina cuando se implemente Authorization: Bearer."
+            example: user-1
+          required: true
+          description: "TEMPORAL (fase sin autenticación): identifica al usuario porque no
+            hay token. Se elimina cuando se implemente Authorization: Bearer."
+          name: userId
+          in: query
+      responses:
+        "200":
+          description: Usuario.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsuarioResumenEnvelope"
+        "400":
+          description: Validación fallida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Usuario no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: Error interno (mensaje genérico).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /projects:
+    get:
+      tags:
+        - Projects
+      summary: Listar proyectos (P0, H2)
+      description: "FASE SIN AUTENTICACIÓN: devuelve todos los proyectos (visibilidad
+        de Admin); la restricción por usuario llega con auth."
+      parameters:
+        - schema:
+            type: string
+            description: Cursor opaco devuelto en nextCursor.
+          required: false
+          description: Cursor opaco devuelto en nextCursor.
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            description: Tamaño de página (default 20, máx. 100).
+            example: 20
+          required: false
+          description: Tamaño de página (default 20, máx. 100).
+          name: limit
+          in: query
+      responses:
+        "200":
+          description: Página de proyectos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProyectoPageEnvelope"
+        "400":
+          description: Validación fallida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: Error interno (mensaje genérico).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    post:
+      tags:
+        - Projects
+      summary: Crear proyecto (P1, H2)
+      description: "`creadorId` es TEMPORAL y sustituye al usuario autenticado."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectBody"
+      responses:
+        "200":
+          description: Proyecto creado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProyectoEnvelope"
+        "400":
+          description: Validación fallida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: Error interno (mensaje genérico).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /projects/{projectId}/tickets:
+    get:
+      tags:
+        - Tickets
+      summary: Listar tickets de un proyecto (P0, H6)
+      description: Excluye tickets archivados.
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            example: bd-proy-1
+          required: true
+          name: projectId
+          in: path
+        - schema:
+            type: string
+            description: Cursor opaco devuelto en nextCursor.
+          required: false
+          description: Cursor opaco devuelto en nextCursor.
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            description: Tamaño de página (default 20, máx. 100).
+            example: 20
+          required: false
+          description: Tamaño de página (default 20, máx. 100).
+          name: limit
+          in: query
+      responses:
+        "200":
+          description: Página de tickets.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketPageEnvelope"
+        "400":
+          description: Validación fallida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Proyecto no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: Error interno (mensaje genérico).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    post:
+      tags:
+        - Tickets
+      summary: Crear ticket (P1, H3)
+      description: Estado inicial `POR_HACER`. `creadorId` es TEMPORAL y sustituye al
+        usuario autenticado. Falta de `titulo` → 400 con
+        `errors[{field:"titulo"}]`.
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            example: bd-proy-1
+          required: true
+          name: projectId
+          in: path
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTicketBody"
+      responses:
+        "200":
+          description: Ticket creado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketEnvelope"
+        "400":
+          description: Validación fallida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Proyecto no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: Error interno (mensaje genérico).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /projects/{projectId}/tickets/{ticketId}:
+    patch:
+      tags:
+        - Tickets
+      summary: Actualizar un ticket (P0, H3/H6)
+      description: "Actualización parcial, last-write-wins. Si `estado` pasa a
+        TERMINADO se fija `cerradoEn`; siempre se actualiza `actualizadoEn`.
+        FASE SIN AUTENTICACIÓN: sin chequeo de permisos."
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            example: bd-proy-1
+          required: true
+          name: projectId
+          in: path
+        - schema:
+            type: string
+            minLength: 1
+            example: bd-tk-1
+          required: true
+          name: ticketId
+          in: path
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchTicketBody"
+      responses:
+        "200":
+          description: Ticket actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketEnvelope"
+        "400":
+          description: Validación fallida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Ticket no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: Error interno (mensaje genérico).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    delete:
+      tags:
+        - Tickets
+      summary: Archivar ticket (P1, H4)
+      description: Archivado lógico (`archivado = true`), nunca borrado físico.
+        `actorId` (query, TEMPORAL) se guarda como `archivadoPorId`.
+        Idempotente.
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            example: bd-proy-1
+          required: true
+          name: projectId
+          in: path
+        - schema:
+            type: string
+            minLength: 1
+            example: bd-tk-1
+          required: true
+          name: ticketId
+          in: path
+        - schema:
+            type: string
+            minLength: 1
+            description: "TEMPORAL (fase sin autenticación): sustituye al usuario
+              autenticado. Se guarda como archivadoPorId. Opcional."
+            example: user-1
+          required: false
+          description: "TEMPORAL (fase sin autenticación): sustituye al usuario
+            autenticado. Se guarda como archivadoPorId. Opcional."
+          name: actorId
+          in: query
+      responses:
+        "200":
+          description: Ticket archivado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketEnvelope"
+        "400":
+          description: Validación fallida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Ticket no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: Error interno (mensaje genérico).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Cerrar sesión (P2, H1)
+      description: "FASE SIN AUTENTICACIÓN: no hay token que invalidar; responde `ok:
+        true`."
+      responses:
+        "200":
+          description: Sesión cerrada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutEnvelope"
+        "500":
+          description: Error interno (mensaje genérico).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /projects/{projectId}:
+    patch:
+      tags:
+        - Projects
+      summary: Editar proyecto (P1, H2)
+      description: Actualización parcial. Sin chequeo de "solo el creador" en esta fase.
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            example: bd-proy-1
+          required: true
+          name: projectId
+          in: path
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchProjectBody"
+      responses:
+        "200":
+          description: Proyecto actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProyectoEnvelope"
+        "400":
+          description: Validación fallida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Proyecto no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: Error interno (mensaje genérico).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /projects/{projectId}/tickets/{ticketId}/restore:
+    post:
+      tags:
+        - Tickets
+      summary: Restaurar ticket archivado (P1, H4)
+      description: Sin chequeo "solo Administrador" en esta fase.
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            example: bd-proy-1
+          required: true
+          name: projectId
+          in: path
+        - schema:
+            type: string
+            minLength: 1
+            example: bd-tk-1
+          required: true
+          name: ticketId
+          in: path
+      responses:
+        "200":
+          description: Ticket restaurado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketEnvelope"
+        "400":
+          description: Validación fallida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Ticket no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: Error interno (mensaje genérico).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /projects/{projectId}/tickets/{ticketId}/responsables:
+    post:
+      tags:
+        - Responsables
+      summary: Agregar responsable a un ticket (P1, H5)
+      description: "Idempotente: asignar al mismo usuario dos veces no es error. Sin
+        regla de auto-asignación en esta fase."
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            example: bd-proy-1
+          required: true
+          name: projectId
+          in: path
+        - schema:
+            type: string
+            minLength: 1
+            example: bd-tk-1
+          required: true
+          name: ticketId
+          in: path
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddResponsableBody"
+      responses:
+        "200":
+          description: Ticket con `responsables[]` actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketEnvelope"
+        "400":
+          description: Validación fallida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Ticket no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: Error interno (mensaje genérico).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /projects/{projectId}/tickets/{ticketId}/comments:
+    get:
+      tags:
+        - Comments
+      summary: Listar comentarios de un ticket (P1, H7)
+      description: Orden cronológico (más antiguo primero).
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            example: bd-proy-1
+          required: true
+          name: projectId
+          in: path
+        - schema:
+            type: string
+            minLength: 1
+            example: bd-tk-1
+          required: true
+          name: ticketId
+          in: path
+        - schema:
+            type: string
+            description: Cursor opaco devuelto en nextCursor.
+          required: false
+          description: Cursor opaco devuelto en nextCursor.
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            description: Tamaño de página (default 20, máx. 100).
+            example: 20
+          required: false
+          description: Tamaño de página (default 20, máx. 100).
+          name: limit
+          in: query
+      responses:
+        "200":
+          description: Página de comentarios.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComentarioPageEnvelope"
+        "400":
+          description: Validación fallida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Ticket no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: Error interno (mensaje genérico).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    post:
+      tags:
+        - Comments
+      summary: Agregar comentario (P1, H7)
+      description: "`contenido` vacío o solo espacios → 400, no se registra. `autorId`
+        es TEMPORAL y sustituye al usuario autenticado."
+      parameters:
+        - schema:
+            type: string
+            minLength: 1
+            example: bd-proy-1
+          required: true
+          name: projectId
+          in: path
+        - schema:
+            type: string
+            minLength: 1
+            example: bd-tk-1
+          required: true
+          name: ticketId
+          in: path
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateComentarioBody"
+      responses:
+        "200":
+          description: Comentario creado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComentarioEnvelope"
+        "400":
+          description: Validación fallida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Ticket no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: Error interno (mensaje genérico).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /tickets:
+    get:
+      tags:
+        - Tickets
+      summary: Buscar tickets con filtros (P1, H8)
+      description: "Ruta plana. Filtros opcionales combinables (AND); `etiqueta` y
+        `responsableId` son ids. Excluye archivados. Sin resultados → 200 con
+        `items: []`. Sin acotar por visibilidad en esta fase."
+      parameters:
+        - schema:
+            type: string
+            description: Cursor opaco devuelto en nextCursor.
+          required: false
+          description: Cursor opaco devuelto en nextCursor.
+          name: cursor
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            description: Tamaño de página (default 20, máx. 100).
+            example: 20
+          required: false
+          description: Tamaño de página (default 20, máx. 100).
+          name: limit
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: proyectoId
+          in: query
+        - schema:
+            $ref: "#/components/schemas/Prioridad"
+          required: false
+          name: prioridad
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            description: ID de usuario responsable.
+          required: false
+          description: ID de usuario responsable.
+          name: responsableId
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+            description: ID de etiqueta.
+          required: false
+          description: ID de etiqueta.
+          name: etiqueta
+          in: query
+        - schema:
+            type: string
+            pattern: ^\d{4}-\d{2}-\d{2}$
+            description: YYYY-MM-DD, inclusive.
+          required: false
+          description: YYYY-MM-DD, inclusive.
+          name: fechaDesde
+          in: query
+        - schema:
+            type: string
+            pattern: ^\d{4}-\d{2}-\d{2}$
+            description: YYYY-MM-DD, inclusive.
+          required: false
+          description: YYYY-MM-DD, inclusive.
+          name: fechaHasta
+          in: query
+      responses:
+        "200":
+          description: Página de tickets.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketPageEnvelope"
+        "400":
+          description: Validación fallida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: Error interno (mensaje genérico).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /reports/closed-tickets:
+    get:
+      tags:
+        - Reports
+      summary: Conteo de tickets cerrados por mes y proyecto (P2, H9)
+      description: Tickets `TERMINADO` con `cerradoEn`, agrupados por proyecto/mes/año
+        (UTC). Sin filtros = todo el histórico. Sin restricción a Admin en esta
+        fase.
+      parameters:
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+          required: false
+          name: mes
+          in: query
+        - schema:
+            type: integer
+            minimum: 2000
+            maximum: 2100
+          required: false
+          name: anio
+          in: query
+        - schema:
+            type: string
+            minLength: 1
+          required: false
+          name: proyectoId
+          in: query
+      responses:
+        "200":
+          description: Conteo tabular.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReporteCierreEnvelope"
+        "400":
+          description: Validación fallida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: Error interno (mensaje genérico).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+webhooks: {}

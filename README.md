@@ -9,16 +9,18 @@ Gestor de tareas/tickets simplificado (estilo Jira) para equipos pequeños: proy
 - **Specs:** [`docs/specs.md`](docs/specs.md) — v1.1 (aprobado). Fuente única de verdad del alcance y las reglas de negocio.
 - **Specs de frontend:** [`docs/frontend-specs.md`](docs/frontend-specs.md) (decisión P14) fija el stack definitivo del frontend (monorepo pnpm, React 19, Tailwind v4, TanStack Query, React Hook Form + Zod, `@dnd-kit`) y resuelve las ambigüedades que `specs.md` había dejado abiertas.
 - **Frontend:** `apps/web/` — vista de Proyectos y tablero Kanban de un proyecto construidos sobre datos mock (sin conexión a una API real todavía). El estado del tablero se maneja con un store de Zustand con drag-and-drop (`@dnd-kit`) y actualización optimista con rollback; es una decisión **temporal** documentada en `frontend-specs.md` §5.4, a reemplazar por TanStack Query cuando exista API real.
-- **Backend:** esqueleto Express + Prisma ([`docs/03-arquitectura-esqueleto.md`](docs/03-arquitectura-esqueleto.md)), todas las rutas devuelven `501` (sin lógica de negocio todavía). `backend/prisma/schema.prisma` ya está sincronizado con `specs.md` v1.1 (Ticket↔Proyecto uno-a-muchos, múltiples responsables, 4 estados incluyendo "Review").
+- **API (nueva):** `api/` — Next.js 16 (App Router, TypeScript `strict`) con los endpoints P0, P1 y P2 de [`docs/api-contract.md`](docs/api-contract.md), documentados con OpenAPI/Swagger UI en `/api/docs`. Fase **sin autenticación**: todos los endpoints son anónimos y los campos `TEMPORAL` (`creadorId`, `autorId`, `actorId`) sustituyen al usuario autenticado. Aún no probada contra la BD real (falta la `service_role` key local). Next.js no figura en el stack de `CLAUDE.md`: pendiente reflejarlo en `specs.md`.
+- **Base de datos:** Supabase (PostgreSQL) con las 10 tablas de [`docs/database-schema.yaml`](docs/database-schema.yaml) creadas, RLS activo y datos semilla (4 usuarios, 7 proyectos, 10 tickets, etc.).
+- **Backend legado:** esqueleto Express + Prisma ([`docs/03-arquitectura-esqueleto.md`](docs/03-arquitectura-esqueleto.md)), todas las rutas devuelven `501` (sin lógica de negocio todavía). `backend/prisma/schema.prisma` ya está sincronizado con `specs.md` v1.1 (Ticket↔Proyecto uno-a-muchos, múltiples responsables, 4 estados incluyendo "Review").
 
 ## Stack
 
 | Capa | Tecnología |
 |---|---|
 | Frontend | React 19 + TypeScript + Vite + Tailwind v4, en `apps/web/` (monorepo **pnpm workspaces**, con `packages/shared/` para tipos compartidos) |
-| Backend | Node.js + TypeScript + Express (`backend/`, fuera del monorepo pnpm) |
-| Base de datos | SQLite |
-| Acceso a datos | Prisma ORM |
+| API | Next.js 16 + TypeScript + Zod + `@asteasolutions/zod-to-openapi` (`api/`, fuera del monorepo pnpm) |
+| Backend legado | Node.js + TypeScript + Express + Prisma (`backend/`, esqueleto con SQLite) |
+| Base de datos | Supabase (PostgreSQL gestionado), acceso vía `@supabase/supabase-js` (solo servidor, `service_role`) |
 
 Detalle completo y justificación de cada decisión de stack en [`docs/frontend-specs.md`](docs/frontend-specs.md) §0 y §4.
 
@@ -27,7 +29,8 @@ Detalle completo y justificación de cada decisión de stack en [`docs/frontend-
 ```
 apps/web/         Frontend (React 19 + Vite + Tailwind v4)
 packages/shared/  Tipos compartidos del monorepo pnpm (scaffold, hoy solo consumido por apps/web)
-backend/          API REST (Express + Prisma)
+api/              API REST (Next.js + Supabase), Swagger UI en /api/docs
+backend/          Esqueleto legado (Express + Prisma)
 docs/             Artefactos de cada fase (specs, frontend-specs, prototype-spec, arquitectura, backlog, test plan)
 architecture/     Diagramas C4 y de entidad-relación
 design.md         Sistema de diseño (design tokens, componentes)
@@ -43,7 +46,16 @@ pnpm install        # en la raíz del repo
 pnpm dev            # equivale a "pnpm --filter web dev" → http://localhost:5173
 ```
 
-### Backend
+### API (Next.js)
+```bash
+cd api
+npm install
+cp .env.example .env.local   # completar SUPABASE_SERVICE_ROLE_KEY (nunca commitear)
+npm run dev                  # Swagger UI en http://localhost:3000/api/docs
+npm run openapi              # regenera api/openapi.yaml
+```
+
+### Backend legado
 ```bash
 cd backend
 npm install
@@ -68,6 +80,7 @@ Este README se actualiza al aprobarse cada push. Entradas más recientes arriba.
 
 | Fecha | Push | Resumen |
 |---|---|---|
+| 2026-10-07 | API REST (Next.js) + OpenAPI | Nuevo `api/` con los endpoints P0, P1 y P2 del contrato, validación Zod, envelope `{ data, error }` (RFC 7807), Swagger UI en `/api/docs` y `openapi.yaml` generado. Sin autenticación (campos `TEMPORAL`). Verificados el Swagger y las validaciones; falta la prueba contra la BD real. Incluye también las 10 tablas y datos semilla en Supabase (sin SQL en el repo) y los commits previos `api-contract.md` y `database-schema.yaml` (migración a Supabase, P15). |
 | 2026-09-30 | Tablero: store de Zustand + drag-and-drop | `board.store.ts` (`useTicketsByStatus`/`moveTicket`) conecta `TicketCard`/`BoardColumn`/`KanbanBoard` sin prop-drilling; arrastrar una tarjeta entre columnas (`@dnd-kit`) aplica el cambio de forma optimista y revierte con un banner de error si la llamada simulada falla. Cada tarjeta mantiene el `<select>` "Mover a…" accesible (WCAG AA). Divergencia temporal con TanStack Query documentada en `frontend-specs.md` §5.4. |
 | 2026-09-30 | Tablero Kanban estático | Se construyen `TicketCard`, `BoardColumn` y `KanbanBoard` como piezas presentacionales (sin store todavía), documentadas en `COMPONENTS.md`. |
 | 2026-09-30 | Regla de `COMPONENTS.md` en `CLAUDE.md` | Se deja constancia de que todo componente reutilizable nuevo debe agregarse al inventario antes de darse por terminado. |
