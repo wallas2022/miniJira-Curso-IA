@@ -8,6 +8,7 @@ Generado a partir de la transcripción del kick-off (24 de octubre) y de la sesi
 ### Historial de versiones
 - **v1.0** (kick-off + primera ronda de decisiones): línea base inicial.
 - **v1.1** (23/09/2026, segunda ronda — Bloques A–D): cambia el modelo de permisos, el modelo Ticket↔Proyecto, la asignación de responsables, los estados del tablero, la política de concurrencia y el alcance del modo oscuro. Ver detalle en cada sección y en el registro de decisiones (§7).
+- **v1.3** (07/10/2026, P15): cambia la base de datos de SQLite a **Supabase (PostgreSQL gestionado)**; sin cambios en ORM (Prisma) ni en el resto del stack. Ver §3 y §7.
 
 ---
 
@@ -53,7 +54,7 @@ Generado a partir de la transcripción del kick-off (24 de octubre) y de la sesi
 
 ## 3. Stack Tecnológico
 
-Confirmado formalmente (Decisión PO/PM, P13), **actualizado en v1.2 (Decisión PO/PM, P14, 2026-09-30)**:
+Confirmado formalmente (Decisión PO/PM, P13), actualizado en v1.2 (Decisión PO/PM, P14, 2026-09-30), **y actualizado en v1.3 (Decisión PO/PM, P15, 2026-10-07)**:
 
 | Capa | Tecnología |
 |------|-----------|
@@ -61,12 +62,12 @@ Confirmado formalmente (Decisión PO/PM, P13), **actualizado en v1.2 (Decisión 
 | Gestor de paquetes / repo | **pnpm workspaces (monorepo)**: `apps/web/` (frontend) + `packages/shared/` (tipos compartidos). Reemplaza el `frontend/` con npm de v1.1. |
 | Estilos | **Tailwind v4**. Reemplaza el enfoque anterior de CSS plano + Design Tokens propios (`CLAUDE.md`, `docs/frontend-specs.md` §1); los tokens ya definidos en `design.md`/`tokens.css` se portan al `@theme` de Tailwind, no se descartan. |
 | Backend | Node.js — **sin cambios** |
-| Base de datos | **SQLite** (relacional) — sin cambios |
-| Acceso a datos | **ORM Prisma** (migraciones y tipos generados) — sin cambios |
+| Base de datos | **Supabase (PostgreSQL gestionado)** — **cambiado en v1.3**, reemplaza SQLite |
+| Acceso a datos | **ORM Prisma** (migraciones y tipos generados), `datasource provider = "postgresql"` apuntando a la connection string de Supabase — sin cambios de ORM |
 
-- Se usa SQLite en lugar de PostgreSQL. Con ~10 usuarios la carga es baja; Prisma permite migrar a PostgreSQL en el futuro cambiando sobre todo la configuración del datasource.
+- **(v1.3)** Se reemplaza SQLite por Supabase (PostgreSQL gestionado). Motivo: evitar la limitación de SQLite a una única instancia de backend escribiendo (§4, R-04) y aprovechar enums nativos de PostgreSQL (SQLite no los soporta vía Prisma). Prisma sigue siendo el ORM; el cambio es de `datasource` en `schema.prisma`, no de capa de acceso a datos.
 - El cambio a monorepo pnpm + React 19 + Tailwind v4 no afecta al backend ni al modelo de datos; es exclusivamente una decisión de frontend/tooling.
-- Consecuencia: `CLAUDE.md` y `docs/frontend-specs.md` deben actualizarse para reflejar este stack (ver P14).
+- Consecuencia: `CLAUDE.md`, `docs/frontend-specs.md` y `docs/database-schema.yaml` deben actualizarse para reflejar este stack (ver P14, P15).
 
 ## 4. Supuestos
 
@@ -75,7 +76,7 @@ Confirmado formalmente (Decisión PO/PM, P13), **actualizado en v1.2 (Decisión 
 - **Supuesto pendiente de validación:** se interpreta "asignado a un proyecto" como *tener al menos un ticket de ese proyecto asignado como responsable*. No hay concepto explícito de "membresía de proyecto" en las respuestas del PO/PM; si existiera un mecanismo distinto, debe confirmarse y actualizar RF-04.
 - **Supuesto pendiente de validación:** las respuestas del PO/PM confirman que un ticket puede tener varios responsables (Decisión PO/PM, P8), pero no aclaran si un Usuario normal puede asignar a **otros** usuarios o solo asignarse a **sí mismo**. Hasta confirmar, se asume que un Usuario puede asignarse a sí mismo en tickets propios, y que asignar a terceros quedaría reservado al Administrador. Ver riesgo R-06.
 - Existe al menos un Administrador inicial, creado en el despliegue (seed), que da de alta al resto de cuentas (Decisión PO/PM, P3).
-- Una sola instancia del backend accede a la base SQLite (SQLite no está pensado para varios servidores escribiendo en paralelo).
+- **(Actualizado en v1.3)** Con la migración a Supabase (PostgreSQL gestionado, Decisión PO/PM, P15), deja de aplicar la restricción de una única instancia de backend escribiendo contra la base: PostgreSQL soporta múltiples conexiones/escritores concurrentes de forma nativa.
 
 ## 5. Requerimientos Funcionales
 
@@ -149,6 +150,7 @@ Confirmado formalmente (Decisión PO/PM, P13), **actualizado en v1.2 (Decisión 
 | P12 | Estilo visual / modo oscuro | Estilo limpio en MVP; modo oscuro → Fase 2 | **Modo oscuro pasa a ser requisito del MVP** |
 | P13 | Stack | React + Node.js + SQLite + Prisma | Sin cambios |
 | P14 | Stack de frontend (v1.2, 2026-09-30) | React 18, npm, `frontend/` con CSS + Design Tokens propios | **React 19, monorepo pnpm (`apps/web/` + `packages/shared/`), Tailwind v4.** Reemplaza `frontend/`; backend y modelo de datos sin cambios. |
+| P15 | Base de datos (v1.3, 2026-10-07) | SQLite | **Supabase (PostgreSQL gestionado).** Prisma sigue siendo el ORM (cambia el `datasource` a `postgresql`); elimina la restricción de instancia única de backend (§4) y habilita enums nativos en el esquema (`docs/database-schema.yaml`). |
 
 ## 8. Riesgos
 
@@ -156,7 +158,7 @@ Confirmado formalmente (Decisión PO/PM, P13), **actualizado en v1.2 (Decisión 
 |----|--------|------------|
 | R-01 | El Tech Lead cuestionó la viabilidad del plazo (Transcripción, líneas 36, 46, 54) y se mantiene el alcance completo con plazo fijo; v1.1 además **agrega** alcance (modo oscuro pasa a MVP, 4 estados en vez de 3, visibilidad por proyecto). | Ya se sacaron del MVP email y dashboard. Si a mitad de la semana 2 hay retraso, el PO/PM decide qué RF pasa a Fase 2 y se actualiza este archivo. Vigilar especialmente RF-15 y RF-17 por ser alcance nuevo de v1.1. |
 | R-03 | El modelo de múltiples responsables por ticket (P8) sin reglas claras de quién asigna a terceros puede generar asignaciones descoordinadas. | Confirmar con el PO/PM la regla de asignación (R-06) antes de implementar el endpoint de asignación. |
-| R-04 | SQLite limita el escalado horizontal. | Suficiente para ~10 usuarios; Prisma facilita migrar a PostgreSQL si crece. |
+| R-04 | ~~SQLite limita el escalado horizontal.~~ **Resuelto en v1.3 (P15):** se migró a Supabase (PostgreSQL gestionado), que no tiene esa limitación de escritor único. | Migración ya decidida; validar en `docs/database-schema.yaml` y `schema.prisma` que el `datasource` apunte a Supabase. |
 | R-05 | **(Nuevo en v1.1)** Last-write-wins (RF-16) puede provocar pérdida silenciosa de cambios cuando dos usuarios editan el mismo ticket a la vez, sin aviso al usuario perjudicado. | Aceptado explícitamente por el PO/PM. Documentar el comportamiento en la UI (p. ej. mostrar "última actualización por X" al abrir el ticket) para mitigar sorpresas, sin implementar bloqueo. |
 | R-06 | **(Nuevo en v1.1)** No está confirmado si un Usuario normal puede asignar responsables a **otros** usuarios o solo a sí mismo (P8). | Confirmar con el PO/PM antes de implementar RF-05. Hasta entonces, se implementa la regla más restrictiva (autoasignación) documentada como supuesto en §4. |
 | R-07 | **(Nuevo en v1.1)** El orden de las columnas del tablero (Review antes o después de Terminado) no fue confirmado explícitamente por el PO/PM (P7). | Confirmar orden antes de fijar la UI del tablero; ver nota en RF-10. |

@@ -4,9 +4,10 @@
 
 ## 1. Diagrama de Contenedores (C4 — Nivel 2, HLD)
 
-Contenedores derivados directamente del stack confirmado en `specs.md` §3 (Decisión PO/PM, P13): **React + TypeScript (Vite)** como SPA, **Node.js + TypeScript** como API REST, y **SQLite accedida vía Prisma** como base de datos. No se agregan servicios externos: `specs.md` excluye explícitamente email (Fase 2), integraciones con terceros y tiempo real (fuera de alcance), por lo que no hay contenedores de mensajería, colas ni websockets. Al ser una única instancia de backend contra SQLite (supuesto de `specs.md` §4), no se modela balanceo de carga ni múltiples réplicas de API.
+Contenedores derivados directamente del stack confirmado en `specs.md` §3 (Decisión PO/PM, P13; base de datos actualizada por **P15**, 2026-10-07): **React + TypeScript (Vite)** como SPA, **Node.js + TypeScript** como API REST, y **Supabase (PostgreSQL gestionado) accedida vía Prisma** como base de datos. No se agregan servicios externos de aplicación: `specs.md` excluye explícitamente email (Fase 2), integraciones con terceros y tiempo real (fuera de alcance), por lo que no hay contenedores de mensajería, colas ni websockets; Supabase es el único servicio gestionado externo, y reemplaza la restricción de instancia única de backend que aplicaba con SQLite (`specs.md` §4, actualizado en v1.3).
 
-```mermaid
+```
+
 C4Container
     title Mini Jira - Diagrama de Contenedores (C4, Nivel 2)
 
@@ -16,7 +17,7 @@ C4Container
     System_Boundary(miniJira, "Mini Jira") {
         Container(spa, "Aplicacion Web (SPA)", "React + TypeScript, Vite", "Tablero Kanban, formularios de tickets/proyectos, filtros, modo claro/oscuro (RF-14, RF-15).")
         Container(api, "API REST", "Node.js + TypeScript", "Autenticacion (RF-07), autorizacion por rol (RF-06), reglas de negocio y validaciones (RF-01 a RF-17).")
-        ContainerDb(db, "Base de datos", "SQLite (acceso via Prisma ORM)", "Persiste usuarios, proyectos, tickets, comentarios, etiquetas y asignaciones.")
+        ContainerDb(db, "Base de datos", "Supabase - PostgreSQL gestionado (acceso via Prisma ORM)", "Persiste usuarios, proyectos, tickets, comentarios, etiquetas y asignaciones.")
     }
 
     Rel(usuario, spa, "Usa", "HTTPS")
@@ -34,7 +35,7 @@ sequenceDiagram
     actor U as Usuario
     participant SPA as Frontend (React SPA)
     participant API as API REST (Node.js)
-    participant DB as Base de datos (SQLite via Prisma)
+    participant DB as Base de datos (Supabase/PostgreSQL via Prisma)
 
     U->>SPA: Completa formulario de ticket (titulo, proyecto, prioridad, etiquetas, responsables)
     SPA->>SPA: Valida que el titulo y el proyecto esten presentes (RF-01)

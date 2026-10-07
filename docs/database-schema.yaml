@@ -1,0 +1,246 @@
+# database-schema.yaml — Modelo de datos físico (Mini Jira)
+#
+# Fuente: docs/specs.md (v1.3, P15, APROBADO) + docs/api-contract.md (tipos de
+# apps/web/src/types.ts como forma de datos autoritativa, según convención de
+# api-contract.md §1). Si este archivo diverge de specs.md o api-contract.md,
+# prevalece specs.md (ver CLAUDE.md) y debe corregirse aquí explícitamente.
+#
+# Formato semántico, no SQL: describe columnas, tipos lógicos, restricciones
+# (PK, FK→tabla.columna, NOT NULL, DEFAULT, UNIQUE), enums e índices. La
+# traducción a schema.prisma / migraciones SQL es un paso posterior.
+#
+# ⚠️ DECISIÓN DE ALCANCE PENDIENTE DE REFLEJAR EN specs.md:
+# Las tablas `project_members`, `audit_log` y `ticket_locks` NO se derivan de
+# ningún RF/historia vigente en specs.md o api-contract.md — al contrario,
+# api-contract.md §5 y §6 documentan explícitamente que audit_log y los
+# endpoints de lock NO deben implementarse en el MVP, y specs.md §4 no define
+# "membresía de proyecto" como concepto. Se incluyen aquí porque así se decidió
+# explícitamente al revisar este documento (2026-10-07), pero CLAUDE.md exige
+# no dejar divergencias en silencio entre código/esquema y specs.md: antes de
+# implementar estas tres tablas, specs.md y api-contract.md deben actualizarse
+# para reflejar el cambio de alcance. Cada una queda marcada abajo con
+# `scope_expansion: true` y el detalle de la divergencia.
+#
+# Nota de identificadores: types.ts declara `id: string` en todas las
+# entidades (UsuarioResumen, Proyecto, Ticket, Etiqueta). Se sigue ese tipo
+# (TEXT, estilo cuid/uuid generado por Prisma) en vez de INTEGER autoincremental
+# usado como simplificación conceptual en architecture/er_diagram.md.
+#
+# Nota Prisma/PostgreSQL (Decisión PO/PM, P15, 2026-10-07 — reemplaza SQLite
+# por Supabase/PostgreSQL gestionado): a diferencia del conector sqlite,
+# PostgreSQL sí soporta el tipo `enum` nativo vía Prisma (`CREATE TYPE ...
+# AS ENUM`). Los campos marcados `enum: <nombre>` se implementan como un tipo
+# enum nativo de PostgreSQL sobre los valores listados en la sección `enums`,
+# que coinciden literalmente con types.ts.
+
+meta:
+  motor: "Supabase (PostgreSQL gestionado)"
+  orm: Prisma
+  fuente:
+    - docs/specs.md (v1.3, P15)
+    - docs/api-contract.md
+    - apps/web/src/types.ts
+  convencion_nombres: "snake_case para tablas y columnas físicas; el mapeo a nombres camelCase de Prisma/types.ts se decide en schema.prisma (@map/@@map)."
+
+enums:
+  rol:
+    values: [ADMIN, USUARIO]
+    origen: "types.ts Rol; RF-06"
+    implementacion: "enum nativo de PostgreSQL"
+  estado:
+    values: [POR_HACER, EN_PROGRESO, REVIEW, TERMINADO]
+    origen: "types.ts Estado; RF-10. Orden fijo propuesto Por hacer → En progreso → Review → Terminado, pendiente de confirmación PO/PM (R-07, specs.md §5.2 nota RF-10)."
+    implementacion: "enum nativo de PostgreSQL"
+  prioridad:
+    values: [BAJA, MEDIA, ALTA]
+    origen: "types.ts Prioridad; RF-09a"
+    implementacion: "enum nativo de PostgreSQL"
+
+tables:
+
+  users:
+    description: "Cuentas de usuario (UsuarioResumen en types.ts). RF-06, RF-07."
+    columns:
+      - { name: id, type: TEXT, constraints: [PK] }
+      - { name: email, type: TEXT, constraints: [NOT NULL, UNIQUE] }
+      - name: password_hash
+        type: TEXT
+        constraints: [NOT NULL]
+        notes: "RF-07: hash bcrypt/argon2. No existe en UsuarioResumen (types.ts) porque nunca se expone al frontend."
+      - { name: nombre, type: TEXT, constraints: [NOT NULL] }
+      - { name: rol, type: TEXT, enum: rol, constraints: [NOT NULL], default: "USUARIO" }
+      - { name: activo, type: BOOLEAN, constraints: [NOT NULL], default: true }
+    primary_key: [id]
+    indexes:
+      - columns: [email]
+        reason: "lookup de login (POST /auth/login) y restricción UNIQUE"
+    annotations:
+      - "nombre no está definido explícitamente por RF-07 en specs.md (hueco ya señalado en architecture/er_diagram.md §4); se incluye por ser campo obligatorio de types.ts/UsuarioResumen, usado como autor visible en comentarios y tickets."
+
+  projects:
+    description: "Proyectos (Proyecto en types.ts). RF-04."
+    columns:
+      - { name: id, type: TEXT, constraints: [PK] }
+      - { name: nombre, type: TEXT, constraints: [NOT NULL] }
+      - { name: descripcion, type: TEXT, constraints: [] }
+      - { name: creador_id, type: TEXT, constraints: ["FK→users.id", NOT NULL] }
+      - { name: creado_en, type: DATETIME, constraints: [NOT NULL], default: CURRENT_TIMESTAMP }
+    primary_key: [id]
+    indexes:
+      - columns: [creador_id]
+        reason: "RF-04/RF-17: visibilidad de Usuario incluye proyectos que él creó"
+    annotations:
+      - "ticketsAbiertos (types.ts) es un campo CALCULADO en runtime (COUNT de tickets con proyecto_id = este, archivado = false, estado != 'TERMINADO'), no una columna persistida."
+
+  project_members:
+    description: "Membresía explícita de proyecto (N:M usuario↔proyecto)."
+    scope_expansion: true
+    scope_note: >
+      specs.md §4 indica explícitamente que NO existe un concepto de
+      "membresía de proyecto": la visibilidad de un Usuario se deriva de ser
+      creador del proyecto (projects.creador_id) o de tener al menos un
+      ticket asignado en él (ticket_assignees), y lo marca como "supuesto
+      pendiente de validación". Esta tabla modela una membresía explícita
+      adicional, no descrita por ningún RF vigente — decisión tomada
+      explícitamente el 2026-10-07 al revisar este documento. Pendiente:
+      actualizar specs.md/RF-04 para confirmar este mecanismo antes de
+      implementarlo, y definir qué endpoint la gestiona (no existe en
+      api-contract.md hoy).
+    columns:
+      - { name: project_id, type: TEXT, constraints: [PK, "FK→projects.id", NOT NULL] }
+      - { name: user_id, type: TEXT, constraints: [PK, "FK→users.id", NOT NULL] }
+      - { name: agregado_en, type: DATETIME, constraints: [NOT NULL], default: CURRENT_TIMESTAMP }
+    primary_key: [project_id, user_id]
+    indexes:
+      - columns: [user_id]
+        reason: "resolver 'proyectos visibles para un usuario' sin escanear project_id"
+
+  tickets:
+    description: "Tickets (Ticket en types.ts). RF-01, RF-02, RF-03, RF-08."
+    columns:
+      - { name: id, type: TEXT, constraints: [PK] }
+      - { name: titulo, type: TEXT, constraints: [NOT NULL] }
+      - { name: descripcion, type: TEXT, constraints: [] }
+      - { name: estado, type: TEXT, enum: estado, constraints: [NOT NULL], default: "POR_HACER" }
+      - name: prioridad
+        type: TEXT
+        enum: prioridad
+        constraints: [NOT NULL]
+        default: "MEDIA"
+        notes: "RF-09a no especifica valor por defecto; 'MEDIA' es una asunción de implementación (POST /projects/:projectId/tickets permite omitir prioridad)."
+      - { name: fecha, type: DATE, constraints: [] , notes: "Significado ambiguo en specs.md RF-08 (¿vencimiento?) — ver architecture/er_diagram.md §4. Se mantiene el nombre literal hasta aclarar." }
+      - { name: proyecto_id, type: TEXT, constraints: ["FK→projects.id", NOT NULL] }
+      - { name: creador_id, type: TEXT, constraints: ["FK→users.id", NOT NULL] }
+      - { name: archivado, type: BOOLEAN, constraints: [NOT NULL], default: false }
+      - { name: archivado_por_id, type: TEXT, constraints: ["FK→users.id"] }
+      - { name: creado_en, type: DATETIME, constraints: [NOT NULL], default: CURRENT_TIMESTAMP }
+      - { name: actualizado_en, type: DATETIME, constraints: [NOT NULL], notes: "Se actualiza en cada PATCH (RF-16, last-write-wins: sin columna version/lock)." }
+      - { name: cerrado_en, type: DATETIME, constraints: [], notes: "Se fija cuando estado pasa a TERMINADO (RF-08)." }
+    primary_key: [id]
+    indexes:
+      - { columns: [estado], reason: "filtro de tablero Kanban por columna (RF-10) — pedido explícitamente" }
+      - { columns: [prioridad], reason: "filtro de tickets por prioridad (RF-09, H8) — pedido explícitamente" }
+      - { columns: [proyecto_id], reason: "scoping de tickets por proyecto (GET /projects/:projectId/tickets) — pedido explícitamente" }
+      - { columns: [archivado], reason: "excluir archivados del tablero/filtros por defecto (RF-02, H4)" }
+      - { columns: [fecha], reason: "filtro por rango de fecha (RF-09, H8: fechaDesde/fechaHasta)" }
+    annotations:
+      - >
+        Soft-delete vía la columna booleana `archivado` + `archivado_por_id`
+        (traza de quién archivó, RF-02), NO vía un timestamp `archived_at`:
+        types.ts/Ticket no define ese campo; se sigue su forma literal
+        (api-contract.md §1 lo marca como fuente autoritativa).
+
+  ticket_assignees:
+    description: "Responsables de un ticket (Responsable en types.ts; N:M ticket↔usuario). RF-05."
+    columns:
+      - { name: ticket_id, type: TEXT, constraints: [PK, "FK→tickets.id", NOT NULL] }
+      - { name: user_id, type: TEXT, constraints: [PK, "FK→users.id", NOT NULL] }
+      - { name: asignado_en, type: DATETIME, constraints: [NOT NULL], default: CURRENT_TIMESTAMP }
+    primary_key: [ticket_id, user_id]
+    indexes:
+      - { columns: [user_id], reason: "filtro por responsableId (RF-09, H8) y resolver proyectos visibles para un Usuario (RF-17)" }
+      - { columns: [ticket_id], reason: "listar responsables de un ticket (Ticket.responsables)" }
+
+  tags:
+    description: "Catálogo de etiquetas (Etiqueta en types.ts). RF-09b."
+    columns:
+      - { name: id, type: TEXT, constraints: [PK] }
+      - { name: nombre, type: TEXT, constraints: [NOT NULL, UNIQUE] }
+    primary_key: [id]
+    annotations:
+      - >
+        Modelada como catálogo compartido (reutilizable entre tickets) en vez
+        de texto libre embebido por ticket, siguiendo el mismo criterio ya
+        documentado en architecture/er_diagram.md §4: permite el filtrado por
+        etiqueta de RF-09/H8. Esa ambigüedad (catálogo vs. texto libre
+        estrictamente local) sigue sin confirmar con el PO/PM.
+
+  ticket_tags:
+    description: "Relación N:M ticket↔etiqueta."
+    columns:
+      - { name: ticket_id, type: TEXT, constraints: [PK, "FK→tickets.id", NOT NULL] }
+      - { name: tag_id, type: TEXT, constraints: [PK, "FK→tags.id", NOT NULL] }
+    primary_key: [ticket_id, tag_id]
+    indexes:
+      - { columns: [tag_id], reason: "filtro por etiqueta (RF-09, H8)" }
+
+  comments:
+    description: "Comentarios de un ticket (Comentario, tipo nuevo propuesto en api-contract.md §1). RF-11."
+    columns:
+      - { name: id, type: TEXT, constraints: [PK] }
+      - { name: ticket_id, type: TEXT, constraints: ["FK→tickets.id", NOT NULL] }
+      - { name: autor_id, type: TEXT, constraints: ["FK→users.id", NOT NULL] }
+      - { name: contenido, type: TEXT, constraints: [NOT NULL], notes: "Validación de no-vacío/solo-espacios a nivel aplicación (400, H7 edge case) — no expresable como CHECK simple por trimming." }
+      - { name: creado_en, type: DATETIME, constraints: [NOT NULL], default: CURRENT_TIMESTAMP }
+    primary_key: [id]
+    indexes:
+      - { columns: [ticket_id], reason: "GET .../tickets/:ticketId/comments, orden cronológico (RF-11, H7)" }
+
+  audit_log:
+    description: "Traza de auditoría genérica sobre entidades del dominio."
+    scope_expansion: true
+    scope_note: >
+      api-contract.md §5 dice explícitamente: "No existe entidad de audit-log
+      en el frontend ni en specs.md; RF-02 ('traza de auditoría' de quién
+      archivó un ticket) ya está satisfecho por el campo plano
+      Ticket.archivadoPorId. Agregar un audit-log real sería ampliar el
+      alcance de specs.md sin que ninguna historia de backlog.md lo pida hoy."
+      Se incluye igualmente por decisión explícita del 2026-10-07 al revisar
+      este documento. El esquema de entity_type/action es diseño propio (no
+      derivado de ningún RF): pendiente confirmar con PO/PM qué acciones y
+      entidades debe cubrir, y actualizar specs.md/api-contract.md en
+      consecuencia antes de implementar.
+    immutable: true
+    columns:
+      - { name: id, type: TEXT, constraints: [PK] }
+      - { name: entity_type, type: TEXT, constraints: [NOT NULL], notes: "Diseño propio, no definido en specs.md. Ej.: 'ticket', 'project'." }
+      - { name: entity_id, type: TEXT, constraints: [NOT NULL] }
+      - { name: action, type: TEXT, constraints: [NOT NULL], notes: "Diseño propio. Ej.: 'ARCHIVE', 'RESTORE', 'ASSIGN', 'UPDATE'." }
+      - { name: actor_id, type: TEXT, constraints: ["FK→users.id", NOT NULL] }
+      - { name: detalle, type: TEXT, constraints: [], notes: "Contexto libre/JSON serializado de la acción." }
+      - { name: creado_en, type: DATETIME, constraints: [NOT NULL], default: CURRENT_TIMESTAMP }
+    primary_key: [id]
+    indexes:
+      - { columns: [entity_type, entity_id], reason: "consultar historial de una entidad concreta" }
+      - { columns: [actor_id], reason: "consultar acciones realizadas por un usuario" }
+    annotations:
+      - "immutable: true — a nivel de aplicación/Prisma no se exponen operaciones UPDATE ni DELETE sobre esta tabla; solo INSERT."
+
+  ticket_locks:
+    description: "Bloqueo optimista de edición de ticket (1:1 con tickets)."
+    scope_expansion: true
+    scope_note: >
+      Contradice la decisión vigente de specs.md: P5/RF-16 (v1.1) reemplazó
+      el bloqueo optimista por "last-write-wins, sin detección de conflicto"
+      de forma explícita. api-contract.md §6 documenta los endpoints de lock
+      bajo "Fase 2 — pendiente de decisión PO" y dice textualmente que
+      "no deben implementarse" mientras specs.md no se actualice para
+      reintroducir locking. Se incluye esta tabla igualmente por decisión
+      explícita del 2026-10-07 al revisar este documento. No usar en el MVP
+      hasta que specs.md P5/RF-16 se revierta formalmente.
+    columns:
+      - { name: ticket_id, type: TEXT, constraints: [PK, "FK→tickets.id", NOT NULL], notes: "1:1 — la PK es la propia FK a tickets.id, como se pidió." }
+      - { name: locked_by_id, type: TEXT, constraints: ["FK→users.id", NOT NULL] }
+      - { name: locked_at, type: DATETIME, constraints: [NOT NULL], default: CURRENT_TIMESTAMP }
+      - { name: expires_at, type: DATETIME, constraints: [NOT NULL] }
+    primary_key: [ticket_id]
