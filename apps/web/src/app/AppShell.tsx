@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 export interface AppShellProps {
   children: ReactNode;
@@ -18,6 +19,9 @@ export function AppShell({ children }: AppShellProps) {
           <Link to="/proyectos" className="text-body text-link">
             Proyectos
           </Link>
+          <div className="ml-auto">
+            <ThemeToggle />
+          </div>
         </nav>
       </header>
       <main>{children}</main>

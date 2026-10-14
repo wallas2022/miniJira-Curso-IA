@@ -5,6 +5,13 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mini Jira</title>
+    <script>
+      // Aplica el tema guardado antes del primer render para evitar un destello de tema incorrecto.
+      try {
+        var t = localStorage.getItem('mj-theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

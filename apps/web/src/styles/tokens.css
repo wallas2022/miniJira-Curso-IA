@@ -82,9 +82,12 @@
 
 /* Overrides de tema oscuro (RF-15) — mismas variables, valores
    reverificados independientemente contra WCAG AA, no una inversión
-   automática de la escala de grises. */
+   automática de la escala de grises.
+   Dos selectores con los mismos valores (mantener en sync): el sistema oscuro,
+   salvo que el usuario haya forzado claro, y el oscuro forzado por el usuario
+   (data-theme en <html>, escrito por ThemeProvider). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --mj-color-bg-canvas: #1d1d1f;
     --mj-color-bg-surface: #2c2c2e;
     --mj-color-border: #3a3a3c;
@@ -100,6 +103,23 @@
     --mj-color-error-bg: #3a1414;
     --mj-color-error-text: #ffb4ab;
   }
+}
+
+:root[data-theme="dark"] {
+  --mj-color-bg-canvas: #1d1d1f;
+  --mj-color-bg-surface: #2c2c2e;
+  --mj-color-border: #3a3a3c;
+  --mj-color-text-primary: #f5f5f7;
+  --mj-color-text-secondary: #a1a1a6;
+  --mj-color-link: #4da3ff;
+  --mj-color-priority-baja: #4ade80;
+  --mj-color-priority-media: #fbbf24;
+  --mj-color-priority-alta: #f87171;
+  --mj-color-danger: #f87171;
+  --mj-color-info-bg: #12263d;
+  --mj-color-info-text: #bcdcff;
+  --mj-color-error-bg: #3a1414;
+  --mj-color-error-text: #ffb4ab;
 }
 
 /* Foco visible global — nunca se remueve sin reemplazo (prototype-spec.md §B) */

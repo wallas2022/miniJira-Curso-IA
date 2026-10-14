@@ -178,7 +178,7 @@ De `docs/prototype-spec.md` §B, aplicado en `tokens.css`:
 - **Color no es el único portador de significado:** prioridad = color + texto ("Prioridad: Alta"), nunca badge sin etiqueta.
 - **Movimiento reducido:** `@media (prefers-reduced-motion: reduce)` anula duraciones de animación/transición a `0.01ms` globalmente.
 - **Objetivo táctil:** `min-height: 44px` en botones, inputs, select, fila de checkbox (`.mj-checkbox-row`).
-- **Tema oscuro:** automático vía `prefers-color-scheme` (RF-15); cada color fue reverificado en oscuro, no solo invertido (ver notas de contraste en §1).
+- **Tema oscuro:** sigue `prefers-color-scheme` por defecto y el usuario puede forzarlo con el botón de `AppShell` (`ThemeToggle`, RF-15). La elección se guarda en `localStorage` y se aplica como `data-theme="light"|"dark"` en `<html>`, que prevalece sobre la preferencia del sistema. Cada color fue reverificado en oscuro, no solo invertido (ver notas de contraste en §1).
 
 ---
 
@@ -347,7 +347,7 @@ Variables reales de `tokens.css`, sin duplicados, listas para portar a un `@them
    reverificados independientemente contra WCAG AA, no una inversión
    automática de la escala de grises. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --mj-color-bg-canvas: #1d1d1f;
     --mj-color-bg-surface: #2c2c2e;
     --mj-color-border: #3a3a3c;
