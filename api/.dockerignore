@@ -1,0 +1,29 @@
+# Secretos
+.env*
+!.env.example
+
+# Dependencias y build local
+node_modules
+.next
+out
+*.tsbuildinfo
+
+# Control de versiones y editor
+.git
+.gitignore
+.vscode
+.claude
+
+# Tests y coverage
+coverage
+**/*.test.*
+**/*.spec.*
+**/__tests__
+
+# Docker y docs
+Dockerfile
+docker-compose*.yml
+.dockerignore
+README.md
+AGENTS.md
+npm-debug.log*

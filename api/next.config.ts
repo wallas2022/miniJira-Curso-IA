@@ -6,6 +6,8 @@ const allowedOrigin = process.env.CORS_ORIGIN ?? "http://localhost:5273";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // Genera .next/standalone (server.js + solo los node_modules trazados) para la imagen Docker.
+  output: "standalone",
   cacheComponents: true,
   partialPrefetching: true,
   async headers() {
