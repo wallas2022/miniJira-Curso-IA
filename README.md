@@ -56,6 +56,13 @@ npm run dev                  # Swagger UI en http://localhost:3100/api/docs
 npm run openapi              # regenera api/openapi.yaml
 ```
 
+Con Docker (puerto 3000, healthcheck en `/api/health`; las variables salen del host, sin `.env` en la imagen):
+```bash
+cd api
+# exportar DATABASE_URL, FRONTEND_URL, JWT_SECRET, SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY
+docker compose up --build
+```
+
 ### Backend legado
 ```bash
 cd backend
@@ -84,6 +91,7 @@ Este README se actualiza al aprobarse cada push. Entradas más recientes arriba.
 |---|---|---|
 | 2026-10-14 | Endpoints P1 en el frontend | `@tanstack/react-query` instalado con `QueryClientProvider` en `App.tsx` (aún sin uso). `api.ts` suma las funciones P1 y `types.ts` el tipo `Comentario`; `board.store.ts` y `projects.store.ts` ganan acciones P1 (optimista con rollback por ítem en archivar, restaurar, asignar y editar proyecto; crear y comentar esperan al servidor). Sin UI que las dispare y sin probar contra la API: las escrituras no se ejecutaron para no alterar la BD. |
 | 2026-10-14 | Puertos propios y modo oscuro manual | API en el puerto 3100 y frontend en 5273 (`strictPort`), con CORS y `.env.example` alineados. Nuevo botón claro/oscuro (`ThemeProvider`, `ThemeToggle`, selector `data-theme` en `tokens.css`) documentado en `design.md` y `COMPONENTS.md`. Verificado contra Supabase: `GET /projects`, `GET /projects/:id/tickets` y `PATCH` responden correctamente; el arrastre de tarjetas y el botón de tema no se probaron en navegador. |
+| 2026-10-14 | Docker para la API | `api/Dockerfile` multi-stage (deps → builder → runner, `node:20-alpine`, usuario no-root, solo artefactos `standalone`), `docker-compose.yml` con healthcheck, `restart: unless-stopped` y variables inyectadas desde el host, `.dockerignore` y `GET /api/health`. `next.config.ts` pasa a `output: 'standalone'`. Verificado: build sin errores, `/api/health` 200, imagen de 263 MB y ninguna capa con `.env`; probado con variables ficticias, no contra Supabase. `DATABASE_URL` y `JWT_SECRET` aún no se usan. |
 | 2026-10-14 | Skill y auditoría OWASP | Nueva skill de proyecto `.claude/skills/owasp-security-audit/` y primera auditoría de `api/` (A01, A02, A03, A05, A07, A09): 13 hallazgos (3 críticos, 3 altos, 5 medios, 2 bajos), casi todos por la fase sin autenticación (todo corre con `service_role`). Reportes en `docs/security-report.md` y `docs/correction-prompt.md`; no se corrigió código todavía. |
 | 2026-10-14 | Frontend conectado a la API | `apps/web/src/lib/api.ts` (fetch tipado, endpoints P0), `board.store.ts` carga tickets y mueve con `PATCH` (optimista + rollback), nuevo `projects.store.ts` para `GET /projects`; se elimina el backend simulado `ticketsApi.ts`. CORS de `api/` restringido a un único origen. Sin TanStack Query (fetch directo) y sin login: token vía `VITE_API_TOKEN`. Compila y lintea; falta la prueba end-to-end (la `service_role` local sigue vacía). |
 | 2026-10-07 | API REST (Next.js) + OpenAPI | Nuevo `api/` con los endpoints P0, P1 y P2 del contrato, validación Zod, envelope `{ data, error }` (RFC 7807), Swagger UI en `/api/docs` y `openapi.yaml` generado. Sin autenticación (campos `TEMPORAL`). Verificados el Swagger y las validaciones; falta la prueba contra la BD real. Incluye también las 10 tablas y datos semilla en Supabase (sin SQL en el repo) y los commits previos `api-contract.md` y `database-schema.yaml` (migración a Supabase, P15). |
