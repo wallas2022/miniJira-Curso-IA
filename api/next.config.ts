@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 // Origen del frontend (Vite) autorizado a consumir la API. Un único origen:
 // Access-Control-Allow-Origin no admite listas. Para varios, usar middleware.
-const allowedOrigin = process.env.CORS_ORIGIN ?? "http://localhost:5173";
+const allowedOrigin = process.env.CORS_ORIGIN ?? "http://localhost:5273";
 
 const nextConfig: NextConfig = {
   /* config options here */

@@ -9,7 +9,7 @@ Gestor de tareas/tickets simplificado (estilo Jira) para equipos pequeños: proy
 - **Specs:** [`docs/specs.md`](docs/specs.md) — v1.1 (aprobado). Fuente única de verdad del alcance y las reglas de negocio.
 - **Specs de frontend:** [`docs/frontend-specs.md`](docs/frontend-specs.md) (decisión P14) fija el stack definitivo del frontend (monorepo pnpm, React 19, Tailwind v4, TanStack Query, React Hook Form + Zod, `@dnd-kit`) y resuelve las ambigüedades que `specs.md` había dejado abiertas.
 - **Frontend:** `apps/web/` — vista de Proyectos y tablero Kanban conectados a la API real (`apps/web/src/lib/api.ts`, fetch tipado sobre los endpoints P0; `VITE_API_URL` y `VITE_API_TOKEN` en `.env.local`). Los proyectos y tickets se cargan con `GET /api/projects` y `GET /api/projects/:id/tickets`; mover una tarjeta (`@dnd-kit`) hace `PATCH` con actualización optimista y rollback ante error, en stores de Zustand. Decisión **temporal** documentada en `frontend-specs.md` §5.4: fetch directo en lugar de TanStack Query. Aún sin pantalla de login: el token de desarrollo se pega en `.env.local`.
-- **API (nueva):** `api/` — Next.js 16 (App Router, TypeScript `strict`) con los endpoints P0, P1 y P2 de [`docs/api-contract.md`](docs/api-contract.md), documentados con OpenAPI/Swagger UI en `/api/docs`. Fase **sin autenticación**: todos los endpoints son anónimos y los campos `TEMPORAL` (`creadorId`, `autorId`, `actorId`) sustituyen al usuario autenticado. CORS restringido a un único origen (`CORS_ORIGIN`, por defecto `http://localhost:5173`). Aún no probada contra la BD real (falta la `service_role` key local). Next.js no figura en el stack de `CLAUDE.md`: pendiente reflejarlo en `specs.md`.
+- **API (nueva):** `api/` — Next.js 16 (App Router, TypeScript `strict`) con los endpoints P0, P1 y P2 de [`docs/api-contract.md`](docs/api-contract.md), documentados con OpenAPI/Swagger UI en `/api/docs`. Fase **sin autenticación**: todos los endpoints son anónimos y los campos `TEMPORAL` (`creadorId`, `autorId`, `actorId`) sustituyen al usuario autenticado. CORS restringido a un único origen (`CORS_ORIGIN`, por defecto `http://localhost:5273`). Aún no probada contra la BD real (falta la `service_role` key local). Next.js no figura en el stack de `CLAUDE.md`: pendiente reflejarlo en `specs.md`.
 - **Base de datos:** Supabase (PostgreSQL) con las 10 tablas de [`docs/database-schema.yaml`](docs/database-schema.yaml) creadas, RLS activo y datos semilla (4 usuarios, 7 proyectos, 10 tickets, etc.).
 - **Backend legado:** esqueleto Express + Prisma ([`docs/03-arquitectura-esqueleto.md`](docs/03-arquitectura-esqueleto.md)), todas las rutas devuelven `501` (sin lógica de negocio todavía). `backend/prisma/schema.prisma` ya está sincronizado con `specs.md` v1.1 (Ticket↔Proyecto uno-a-muchos, múltiples responsables, 4 estados incluyendo "Review").
 
@@ -43,8 +43,8 @@ materiales/       Insumos de entrada (transcripciones, etc.)
 ### Frontend (monorepo pnpm)
 ```bash
 pnpm install        # en la raíz del repo
-cp apps/web/.env.example apps/web/.env.local   # VITE_API_URL=http://localhost:3000 y VITE_API_TOKEN
-pnpm dev            # equivale a "pnpm --filter web dev" → http://localhost:5173
+cp apps/web/.env.example apps/web/.env.local   # VITE_API_URL=http://localhost:3100 y VITE_API_TOKEN
+pnpm dev            # equivale a "pnpm --filter web dev" → http://localhost:5273
 ```
 
 ### API (Next.js)
@@ -52,7 +52,7 @@ pnpm dev            # equivale a "pnpm --filter web dev" → http://localhost:51
 cd api
 npm install
 cp .env.example .env.local   # completar SUPABASE_SERVICE_ROLE_KEY (nunca commitear)
-npm run dev                  # Swagger UI en http://localhost:3000/api/docs
+npm run dev                  # Swagger UI en http://localhost:3100/api/docs
 npm run openapi              # regenera api/openapi.yaml
 ```
 
