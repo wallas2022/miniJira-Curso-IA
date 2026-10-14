@@ -51,3 +51,12 @@ export interface Ticket {
   responsables: Responsable[];
   etiquetas: Etiqueta[];
 }
+
+export interface Comentario {
+  id: string;
+  ticketId: string;
+  autorId: string;
+  autor: Pick<UsuarioResumen, 'id' | 'nombre' | 'email'>;
+  contenido: string;
+  creadoEn: string; // ISO 8601
+}
