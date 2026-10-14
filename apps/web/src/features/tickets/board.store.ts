@@ -1,18 +1,36 @@
 import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
-import { mockTickets } from '../../mocks/tickets';
+import { listProjectTickets, patchTicket } from '../../lib/api';
 import type { Estado, Ticket } from '../../types';
-import { moverTicketRemoto } from './ticketsApi';
 
 interface BoardState {
   tickets: Ticket[];
   error: string | null;
+  cargarTickets: (proyectoId: string) => Promise<void>;
   moveTicket: (ticketId: string, nuevoEstado: Estado) => Promise<void>;
 }
 
 export const useBoardStore = create<BoardState>((set, get) => ({
-  tickets: mockTickets,
+  tickets: [],
   error: null,
+  async cargarTickets(proyectoId) {
+    try {
+      const items: Ticket[] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await listProjectTickets(proyectoId, { cursor });
+        items.push(...page.items);
+        cursor = page.nextCursor ?? undefined;
+      } while (cursor);
+
+      set((state) => ({
+        tickets: [...state.tickets.filter((t) => t.proyectoId !== proyectoId), ...items],
+        error: null,
+      }));
+    } catch {
+      set({ error: 'No se pudieron cargar los tickets del proyecto.' });
+    }
+  },
   async moveTicket(ticketId, nuevoEstado) {
     const ticketsAnteriores = get().tickets;
     const ticket = ticketsAnteriores.find((t) => t.id === ticketId);
@@ -26,7 +44,10 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     });
 
     try {
-      await moverTicketRemoto(ticketId, nuevoEstado);
+      const actualizado = await patchTicket(ticket.proyectoId, ticketId, { estado: nuevoEstado });
+      set((state) => ({
+        tickets: state.tickets.map((t) => (t.id === ticketId ? actualizado : t)),
+      }));
     } catch {
       set({
         tickets: ticketsAnteriores,

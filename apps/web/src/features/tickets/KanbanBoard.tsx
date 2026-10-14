@@ -1,4 +1,5 @@
 import { DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { useEffect } from 'react';
 import { useBoardStore } from './board.store';
 import { BoardColumn } from './BoardColumn';
 import { ESTADOS_ORDENADOS, ESTADO_LABELS } from './constants';
@@ -16,7 +17,12 @@ export function KanbanBoard({ proyectoId }: KanbanBoardProps) {
   const tickets = useBoardStore((state) => state.tickets);
   const error = useBoardStore((state) => state.error);
   const moveTicket = useBoardStore((state) => state.moveTicket);
+  const cargarTickets = useBoardStore((state) => state.cargarTickets);
   const sensors = useSensors(useSensor(PointerSensor));
+
+  useEffect(() => {
+    void cargarTickets(proyectoId);
+  }, [cargarTickets, proyectoId]);
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
