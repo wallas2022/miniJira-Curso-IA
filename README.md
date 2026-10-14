@@ -8,8 +8,8 @@ Gestor de tareas/tickets simplificado (estilo Jira) para equipos pequeños: proy
 
 - **Specs:** [`docs/specs.md`](docs/specs.md) — v1.1 (aprobado). Fuente única de verdad del alcance y las reglas de negocio.
 - **Specs de frontend:** [`docs/frontend-specs.md`](docs/frontend-specs.md) (decisión P14) fija el stack definitivo del frontend (monorepo pnpm, React 19, Tailwind v4, TanStack Query, React Hook Form + Zod, `@dnd-kit`) y resuelve las ambigüedades que `specs.md` había dejado abiertas.
-- **Frontend:** `apps/web/` — vista de Proyectos y tablero Kanban de un proyecto construidos sobre datos mock (sin conexión a una API real todavía). El estado del tablero se maneja con un store de Zustand con drag-and-drop (`@dnd-kit`) y actualización optimista con rollback; es una decisión **temporal** documentada en `frontend-specs.md` §5.4, a reemplazar por TanStack Query cuando exista API real.
-- **API (nueva):** `api/` — Next.js 16 (App Router, TypeScript `strict`) con los endpoints P0, P1 y P2 de [`docs/api-contract.md`](docs/api-contract.md), documentados con OpenAPI/Swagger UI en `/api/docs`. Fase **sin autenticación**: todos los endpoints son anónimos y los campos `TEMPORAL` (`creadorId`, `autorId`, `actorId`) sustituyen al usuario autenticado. Aún no probada contra la BD real (falta la `service_role` key local). Next.js no figura en el stack de `CLAUDE.md`: pendiente reflejarlo en `specs.md`.
+- **Frontend:** `apps/web/` — vista de Proyectos y tablero Kanban conectados a la API real (`apps/web/src/lib/api.ts`, fetch tipado sobre los endpoints P0; `VITE_API_URL` y `VITE_API_TOKEN` en `.env.local`). Los proyectos y tickets se cargan con `GET /api/projects` y `GET /api/projects/:id/tickets`; mover una tarjeta (`@dnd-kit`) hace `PATCH` con actualización optimista y rollback ante error, en stores de Zustand. Decisión **temporal** documentada en `frontend-specs.md` §5.4: fetch directo en lugar de TanStack Query. Aún sin pantalla de login: el token de desarrollo se pega en `.env.local`.
+- **API (nueva):** `api/` — Next.js 16 (App Router, TypeScript `strict`) con los endpoints P0, P1 y P2 de [`docs/api-contract.md`](docs/api-contract.md), documentados con OpenAPI/Swagger UI en `/api/docs`. Fase **sin autenticación**: todos los endpoints son anónimos y los campos `TEMPORAL` (`creadorId`, `autorId`, `actorId`) sustituyen al usuario autenticado. CORS restringido a un único origen (`CORS_ORIGIN`, por defecto `http://localhost:5173`). Aún no probada contra la BD real (falta la `service_role` key local). Next.js no figura en el stack de `CLAUDE.md`: pendiente reflejarlo en `specs.md`.
 - **Base de datos:** Supabase (PostgreSQL) con las 10 tablas de [`docs/database-schema.yaml`](docs/database-schema.yaml) creadas, RLS activo y datos semilla (4 usuarios, 7 proyectos, 10 tickets, etc.).
 - **Backend legado:** esqueleto Express + Prisma ([`docs/03-arquitectura-esqueleto.md`](docs/03-arquitectura-esqueleto.md)), todas las rutas devuelven `501` (sin lógica de negocio todavía). `backend/prisma/schema.prisma` ya está sincronizado con `specs.md` v1.1 (Ticket↔Proyecto uno-a-muchos, múltiples responsables, 4 estados incluyendo "Review").
 
@@ -43,6 +43,7 @@ materiales/       Insumos de entrada (transcripciones, etc.)
 ### Frontend (monorepo pnpm)
 ```bash
 pnpm install        # en la raíz del repo
+cp apps/web/.env.example apps/web/.env.local   # VITE_API_URL=http://localhost:3000 y VITE_API_TOKEN
 pnpm dev            # equivale a "pnpm --filter web dev" → http://localhost:5173
 ```
 
@@ -80,6 +81,7 @@ Este README se actualiza al aprobarse cada push. Entradas más recientes arriba.
 
 | Fecha | Push | Resumen |
 |---|---|---|
+| 2026-10-14 | Frontend conectado a la API | `apps/web/src/lib/api.ts` (fetch tipado, endpoints P0), `board.store.ts` carga tickets y mueve con `PATCH` (optimista + rollback), nuevo `projects.store.ts` para `GET /projects`; se elimina el backend simulado `ticketsApi.ts`. CORS de `api/` restringido a un único origen. Sin TanStack Query (fetch directo) y sin login: token vía `VITE_API_TOKEN`. Compila y lintea; falta la prueba end-to-end (la `service_role` local sigue vacía). |
 | 2026-10-07 | API REST (Next.js) + OpenAPI | Nuevo `api/` con los endpoints P0, P1 y P2 del contrato, validación Zod, envelope `{ data, error }` (RFC 7807), Swagger UI en `/api/docs` y `openapi.yaml` generado. Sin autenticación (campos `TEMPORAL`). Verificados el Swagger y las validaciones; falta la prueba contra la BD real. Incluye también las 10 tablas y datos semilla en Supabase (sin SQL en el repo) y los commits previos `api-contract.md` y `database-schema.yaml` (migración a Supabase, P15). |
 | 2026-09-30 | Tablero: store de Zustand + drag-and-drop | `board.store.ts` (`useTicketsByStatus`/`moveTicket`) conecta `TicketCard`/`BoardColumn`/`KanbanBoard` sin prop-drilling; arrastrar una tarjeta entre columnas (`@dnd-kit`) aplica el cambio de forma optimista y revierte con un banner de error si la llamada simulada falla. Cada tarjeta mantiene el `<select>` "Mover a…" accesible (WCAG AA). Divergencia temporal con TanStack Query documentada en `frontend-specs.md` §5.4. |
 | 2026-09-30 | Tablero Kanban estático | Se construyen `TicketCard`, `BoardColumn` y `KanbanBoard` como piezas presentacionales (sin store todavía), documentadas en `COMPONENTS.md`. |
